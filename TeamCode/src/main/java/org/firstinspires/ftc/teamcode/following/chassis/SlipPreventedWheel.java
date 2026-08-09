@@ -45,6 +45,14 @@ public class SlipPreventedWheel {
         wheel.setPower(currPower);
     }
 
+    public void setPowerBypassRamp(double power) {
+
+        prevPower = currPower;
+        currPower = power;
+
+        wheel.setPower(currPower);
+    }
+
     public double getPower() {
         return currPower;
     }
