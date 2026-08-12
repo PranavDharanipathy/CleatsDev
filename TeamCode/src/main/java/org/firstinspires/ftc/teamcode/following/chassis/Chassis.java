@@ -32,6 +32,14 @@ public class Chassis {
         rb.setPower(forward + strafe - turn, dt);
     }
 
+    public void setDrivePowerBypassRamp(double forward, double strafe, double turn) {
+
+        lf.setPowerBypassRamp(forward + strafe + turn);
+        rf.setPowerBypassRamp(forward - strafe - turn);
+        lb.setPowerBypassRamp(forward - strafe + turn);
+        rb.setPowerBypassRamp(forward + strafe - turn);
+    }
+
     public double getLFPower() { return lf.getPower(); }
 
     public double getRFPower() { return rf.getPower(); }

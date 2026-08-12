@@ -3,10 +3,12 @@ package org.firstinspires.ftc.teamcode.following;
 import org.firstinspires.ftc.teamcode.following.chassis.Chassis;
 import org.firstinspires.ftc.teamcode.localization.FinalLocalizer;
 import org.firstinspires.ftc.teamcode.localization.Localizer;
-import org.firstinspires.ftc.teamcode.math.Pose;
+import org.firstinspires.ftc.teamcode.util.Pose;
 import org.firstinspires.ftc.teamcode.path.Movement;
 
 public class PathController {
+
+    // calma calma...
 
     private final Chassis chassis;
 
@@ -15,11 +17,11 @@ public class PathController {
 
     private double dt;
 
-    public PathController(Chassis chassis, Localizer localizer) {
+    public PathController(Chassis chassis, FinalLocalizer localizer) {
 
         this.chassis = chassis;
 
-        this.localizer = new FinalLocalizer(localizer);
+        this.localizer = localizer;
     }
 
     public void follow(Movement movement) {

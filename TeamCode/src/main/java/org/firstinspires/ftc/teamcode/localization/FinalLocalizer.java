@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode.localization;
 
-import org.firstinspires.ftc.teamcode.math.NoiseKalmanFilter;
-import org.firstinspires.ftc.teamcode.math.Pose;
+import org.firstinspires.ftc.teamcode.util.NoiseKalmanFilter;
+import org.firstinspires.ftc.teamcode.util.Pose;
 
 public class FinalLocalizer {
+
+    // heh heh heh heh, SIUUUUUUUUUUUUUUUUUUUUUU!!!
 
     private Pose pose, velocity, acceleration, jerk;
     private Pose prevVelocity, prevAcceleration;
@@ -11,9 +13,9 @@ public class FinalLocalizer {
 
     private final Localizer localizer;
 
-    private final NoiseKalmanFilter velocityX, velocityY, velocityHeading;
-    private final NoiseKalmanFilter accelerationX, accelerationY, accelerationHeading;
-    private final NoiseKalmanFilter jerkX, jerkY, jerkHeading;
+    public final NoiseKalmanFilter velocityX, velocityY, velocityHeading;
+    public final NoiseKalmanFilter accelerationX, accelerationY, accelerationHeading;
+    public final NoiseKalmanFilter jerkX, jerkY, jerkHeading;
 
     public FinalLocalizer(Localizer localizer) {
 
@@ -79,11 +81,7 @@ public class FinalLocalizer {
     }
 
     public void setPose(Pose pose) {
-
         localizer.setPose(pose);
-
-        prevVelocity = new Pose(0,0,0);
-        prevAcceleration = new Pose(0,0,0);
     }
 
     public void update() {
@@ -143,6 +141,10 @@ public class FinalLocalizer {
 
     public Pose getJerk() {
         return jerk;
+    }
+
+    public Localizer getLocalizer() {
+        return localizer;
     }
 
 }

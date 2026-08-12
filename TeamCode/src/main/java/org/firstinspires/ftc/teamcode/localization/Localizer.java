@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.localization;
 
-import org.firstinspires.ftc.teamcode.math.Pose;
+import org.firstinspires.ftc.teamcode.util.Pose;
 
 public abstract class Localizer {
 

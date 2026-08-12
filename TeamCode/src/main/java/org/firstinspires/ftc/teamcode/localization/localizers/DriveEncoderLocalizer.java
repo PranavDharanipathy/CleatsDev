@@ -5,8 +5,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.localization.Encoder;
 import org.firstinspires.ftc.teamcode.localization.Localizer;
-import org.firstinspires.ftc.teamcode.math.MathHelper;
-import org.firstinspires.ftc.teamcode.math.Pose;
+import org.firstinspires.ftc.teamcode.util.MathHelper;
+import org.firstinspires.ftc.teamcode.util.Pose;
 
 public class DriveEncoderLocalizer extends Localizer {
 

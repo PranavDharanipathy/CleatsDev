@@ -7,8 +7,8 @@ import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.localization.Encoder;
 import org.firstinspires.ftc.teamcode.localization.Localizer;
-import org.firstinspires.ftc.teamcode.math.MathHelper;
-import org.firstinspires.ftc.teamcode.math.Pose;
+import org.firstinspires.ftc.teamcode.util.MathHelper;
+import org.firstinspires.ftc.teamcode.util.Pose;
 
 public class DriveEncoderIMULocalizer extends Localizer {
 

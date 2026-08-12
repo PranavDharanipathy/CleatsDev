@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.math;
+package org.firstinspires.ftc.teamcode.util;
 
 import org.apache.commons.math3.util.FastMath;
 
@@ -62,6 +62,14 @@ public class MathHelper {
         double globalY = localX * sinHeading + localY * cosHeading;
 
         return new Pose(globalX, globalY, deltaHeading);
+    }
+
+    public static double lameValue(double angle, double a, double b, double N) {
+
+        final double cosTerm = Math.pow(Math.abs(Math.cos(angle)) / a, N);
+        final double sinTerm = Math.pow(Math.abs(Math.sin(angle)) / b, N);
+
+        return Math.pow(cosTerm + sinTerm, -1d / N);
     }
 
 }

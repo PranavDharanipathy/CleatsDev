@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.math;
+package org.firstinspires.ftc.teamcode.util;
 
 /// Used to deal with noise in data.
 /// <p>
@@ -44,6 +44,7 @@ public class NoiseKalmanFilter {
 
         kalmanGain = 0;
         filteredData = 0;
+        rawData = 0;
 
         p = 0;
     }
@@ -70,7 +71,9 @@ public class NoiseKalmanFilter {
 
         p += q * dt;
 
-        double innovation = data - filteredData;
+        rawData = data;
+
+        double innovation = rawData - filteredData;
 
         double nominalJump = p + r;
 
@@ -104,5 +107,11 @@ public class NoiseKalmanFilter {
 
     public double getOutput() {
         return filteredData;
+    }
+
+    private double rawData;
+
+    public double getRawData() {
+        return rawData;
     }
 }
