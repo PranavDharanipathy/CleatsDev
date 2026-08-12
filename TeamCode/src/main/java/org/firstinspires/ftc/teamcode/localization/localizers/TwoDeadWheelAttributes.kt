@@ -5,6 +5,7 @@ import org.firstinspires.ftc.teamcode.localization.Encoder
 import org.firstinspires.ftc.teamcode.localization.OdometryPod
 
 data class TwoDeadWheelAttributes(
+
     val forwardEncoderName: String,
     val strafeEncoderName: String,
     val imuName: String,

@@ -5,6 +5,7 @@ import org.firstinspires.ftc.teamcode.localization.Encoder
 import org.firstinspires.ftc.teamcode.localization.OdometryPod
 
 data class DriveEncoderIMUAttributes(
+    
     val frontLeftName: String,
     val frontRightName: String,
     val backLeftName: String,

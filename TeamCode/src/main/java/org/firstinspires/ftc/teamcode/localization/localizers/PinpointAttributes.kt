@@ -4,6 +4,7 @@ import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
 import org.firstinspires.ftc.teamcode.localization.OdometryPod
 
 data class PinpointAttributes(
+
     val deviceName: String,
 
     val forwardPodOffsetMM: Double,
