@@ -1,9 +1,9 @@
 package org.firstinspires.ftc.teamcode.following;
 
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.following.chassis.Chassis;
+import org.firstinspires.ftc.teamcode.following.chassis.MotionConstraints;
 import org.firstinspires.ftc.teamcode.following.config.ChassisMotorDirectionsConfig;
 import org.firstinspires.ftc.teamcode.following.config.ChassisMotorNamesConfig;
 import org.firstinspires.ftc.teamcode.following.config.FinalLocalizerNKFConfig;
@@ -24,6 +24,8 @@ public class PathControllerBuilder {
     private FinalLocalizerNKFConfig velocityXConfig, velocityYConfig, velocityHeadingConfig;
     private FinalLocalizerNKFConfig accelerationXConfig, accelerationYConfig, accelerationHeadingConfig;
     private FinalLocalizerNKFConfig jerkXConfig, jerkYConfig, jerkHeadingConfig;
+
+    private MotionConstraints motionConstraints;
 
     public PathControllerBuilder(Supplier<HardwareMap> hardwareMap) {
         this.hardwareMap = new Lazy<>(hardwareMap);
@@ -89,6 +91,11 @@ public class PathControllerBuilder {
         return this;
     }
 
+    public PathControllerBuilder motionConstraints(MotionConstraints motionConstraints) {
+        this.motionConstraints = motionConstraints;
+        return this;
+    }
+
     public PathController build() {
 
         FinalLocalizer localizer = new FinalLocalizer(this.localizer.get());
@@ -107,7 +114,8 @@ public class PathControllerBuilder {
                         chassisMotorDirectionsConfig.assemble(),
                         0
                 ),
-                localizer
+                localizer,
+                motionConstraints
         );
     }
 

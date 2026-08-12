@@ -81,9 +81,9 @@ public class MecanumProfile {
         double lo = 0.01;
         double hi = 100;
 
-        final int bisectionIterations = 80; //~60 is enough but a larger value is used to ensure accuracy
+        final int BISECTION_ITERATIONS = 80; //~60 is enough but a larger value is used to ensure accuracy
 
-        for (int i = 0; i < bisectionIterations; i++) {
+        for (int i = 0; i < BISECTION_ITERATIONS; i++) {
 
             double mid = (lo + hi) / 2d;
             double predicted = MathHelper.lameValue(Math.PI / 4d, a, b, mid);
