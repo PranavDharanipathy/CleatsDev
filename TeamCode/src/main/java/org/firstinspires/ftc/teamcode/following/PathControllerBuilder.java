@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 
 public class PathControllerBuilder {
 
-    private final Lazy<HardwareMap> hardwareMap;
+    private final HardwareMap hardwareMap;
     private ChassisMotorNamesConfig chassisMotorNamesConfig;
     private ChassisMotorDirectionsConfig chassisMotorDirectionsConfig;
 
@@ -27,8 +27,8 @@ public class PathControllerBuilder {
 
     private MotionConstraints motionConstraints;
 
-    public PathControllerBuilder(Supplier<HardwareMap> hardwareMap) {
-        this.hardwareMap = new Lazy<>(hardwareMap);
+    public PathControllerBuilder(HardwareMap hardwareMap) {
+        this.hardwareMap = hardwareMap;
     }
 
     public PathControllerBuilder chassisMotorNamesConfig(ChassisMotorNamesConfig config) {
@@ -109,7 +109,7 @@ public class PathControllerBuilder {
         //TODO allat!!
         return new PathController(
                 new Chassis(
-                        hardwareMap.get(),
+                        hardwareMap,
                         chassisMotorNamesConfig.assemble(),
                         chassisMotorDirectionsConfig.assemble(),
                         motionConstraints.getAmaxF() / motionConstraints.getVmaxF()
