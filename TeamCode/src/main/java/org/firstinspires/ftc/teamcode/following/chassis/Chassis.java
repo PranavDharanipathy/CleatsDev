@@ -26,18 +26,34 @@ public class Chassis {
 
     public void setDrivePower(double forward, double strafe, double turn, double dt) {
 
-        lf.setPower(forward + strafe + turn, dt);
-        rf.setPower(forward - strafe - turn, dt);
-        lb.setPower(forward - strafe + turn, dt);
-        rb.setPower(forward + strafe - turn, dt);
+        double lfPower = forward + strafe + turn;
+        double rfPower = forward - strafe - turn;
+        double lbPower = forward - strafe + turn;
+        double rbPower = forward + strafe - turn;
+
+        double maxMagnitude = Math.max(Math.max(Math.abs(lfPower), Math.abs(rfPower)), Math.max(Math.abs(lbPower), Math.abs(rbPower)));
+        double scale = maxMagnitude > 1d ? 1d / maxMagnitude : 1d;
+
+        lf.setPower(lfPower * scale, dt);
+        rf.setPower(rfPower * scale, dt);
+        lb.setPower(lbPower * scale, dt);
+        rb.setPower(rbPower * scale, dt);
     }
 
     public void setDrivePowerBypassRamp(double forward, double strafe, double turn) {
 
-        lf.setPowerBypassRamp(forward + strafe + turn);
-        rf.setPowerBypassRamp(forward - strafe - turn);
-        lb.setPowerBypassRamp(forward - strafe + turn);
-        rb.setPowerBypassRamp(forward + strafe - turn);
+        double lfPower = forward + strafe + turn;
+        double rfPower = forward - strafe - turn;
+        double lbPower = forward - strafe + turn;
+        double rbPower = forward + strafe - turn;
+
+        double maxMagnitude = Math.max(Math.max(Math.abs(lfPower), Math.abs(rfPower)), Math.max(Math.abs(lbPower), Math.abs(rbPower)));
+        double scale = maxMagnitude > 1d ? 1d / maxMagnitude : 1d;
+
+        lf.setPowerBypassRamp(lfPower * scale);
+        rf.setPowerBypassRamp(rfPower * scale);
+        lb.setPowerBypassRamp(lbPower * scale);
+        rb.setPowerBypassRamp(rbPower * scale);
     }
 
     public double getLFPower() { return lf.getPower(); }
