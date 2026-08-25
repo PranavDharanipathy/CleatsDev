@@ -6,6 +6,10 @@ public class MathHelper {
 
     //Captain America is the greatest avenger
 
+    public static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(value, max));
+    }
+
     public static double normalizeAngleRad(double angleRad) {
         return FastMath.atan2(Math.sin(angleRad), Math.cos(angleRad));
     }
