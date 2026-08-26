@@ -11,6 +11,11 @@ import org.firstinspires.ftc.teamcode.util.Pose;
 
 public class PathController {
 
+    // Wait,
+    // Run that back,
+
+    // Nothing ever goes wrong in Cleats.
+
     private final Chassis chassis;
 
     private final FinalLocalizer localizer;
