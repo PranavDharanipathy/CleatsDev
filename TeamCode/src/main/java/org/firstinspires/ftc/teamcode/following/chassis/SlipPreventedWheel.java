@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 public class SlipPreventedWheel {
 
+    // not bad kid
+
     private final DcMotor wheel;
 
     private double prevPower, currPower;
