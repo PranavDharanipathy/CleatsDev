@@ -3,11 +3,7 @@ package org.firstinspires.ftc.teamcode.path;
 import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
 
-public class HermiteSpline extends Movement {
-
-    private static final int COARSE_SAMPLES_PER_SEGMENT = 20;
-    private static final int REFINE_SAMPLES = 20;
-    private static final double COMPLETION_PARAM_EPSILON = 0.02;
+public class HermiteSpline extends Curve {
 
     private final Pose[] points;
     private final double[] tangentX, tangentY;
@@ -51,7 +47,8 @@ public class HermiteSpline extends Movement {
         }
     }
 
-    private Pose evaluate(double u) {
+    @Override
+    protected Pose evaluate(double u) {
 
         // yo chillax bro, it's okay you ain't the G.O.A.T., I am.
 
@@ -69,68 +66,23 @@ public class HermiteSpline extends Movement {
         double t4 = t3 * t;
         double t5 = t4 * t;
 
-        double h00 = -6d * t5 + 15d * t4 - 10d * t3 + 1d;
-        double h10 = -3d * t5 + 8d * t4 - 6d * t3 + t;
-        double h20 = -0.5d * t5 + 1.5d * t4 - 1.5d * t3 + 0.5d * t2;
-        double h01 = 6d * t5 - 15d * t4 + 10d * t3;
-        double h11 = -3d * t5 + 7d * t4 - 4d * t3;
-        double h21 = 0.5d * t5 - t4 + 0.5d * t3;
+        double h00 /*h0*/ = -6d * t5 + 15d * t4 - 10d * t3 + 1d;
+        double h10 /*h1*/ = -3d * t5 + 8d * t4 - 6d * t3 + t;
+        double h20 /*h2*/ = -0.5d * t5 + 1.5d * t4 - 1.5d * t3 + 0.5d * t2;
+        double h01 /*h3*/ = 6d * t5 - 15d * t4 + 10d * t3;
+        double h11 /*h4*/ = -3d * t5 + 7d * t4 - 4d * t3;
+        double h21 /*h5*/ = 0.5d * t5 - t4 + 0.5d * t3;
 
-        double x = h00 * p0.x + h10 * tangentX[segment] + h20 * accelX[segment]
-                + h01 * p1.x + h11 * tangentX[segment + 1] + h21 * accelX[segment + 1];
-        double y = h00 * p0.y + h10 * tangentY[segment] + h20 * accelY[segment]
-                + h01 * p1.y + h11 * tangentY[segment + 1] + h21 * accelY[segment + 1];
+        double x = h00 * p0.x + h10 * tangentX[segment] + h20 * accelX[segment] + h01 * p1.x + h11 * tangentX[segment + 1] + h21 * accelX[segment + 1];
+        double y = h00 * p0.y + h10 * tangentY[segment] + h20 * accelY[segment] + h01 * p1.y + h11 * tangentY[segment + 1] + h21 * accelY[segment + 1];
 
         double heading = p0.heading + MathHelper.normalizeAngleRad(p1.heading - p0.heading) * t;
 
         return new Pose(x, y, heading);
     }
 
-    private double findBestParam(Pose currentPose) {
-
-        int totalCoarseSamples = COARSE_SAMPLES_PER_SEGMENT * numSegments;
-
-        double bestU = 0;
-        double bestDistance = Double.MAX_VALUE;
-
-        for (int i = 0; i <= totalCoarseSamples; i++) {
-
-            double u = (double) numSegments * i / totalCoarseSamples;
-            Pose point = evaluate(u);
-            double distance = Math.hypot(point.x - currentPose.x, point.y - currentPose.y);
-
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                bestU = u;
-            }
-        }
-
-        double coarseStep = (double) numSegments / totalCoarseSamples;
-        double windowStart = Math.max(0, bestU - coarseStep);
-        double windowEnd = Math.min(numSegments, bestU + coarseStep);
-
-        for (int i = 0; i <= REFINE_SAMPLES; i++) {
-
-            double u = windowStart + (windowEnd - windowStart) * i / REFINE_SAMPLES;
-            Pose point = evaluate(u);
-            double distance = Math.hypot(point.x - currentPose.x, point.y - currentPose.y);
-
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                bestU = u;
-            }
-        }
-
-        return bestU;
-    }
-
     @Override
-    public Pose getTarget(Pose currentPose) {
-        return evaluate(findBestParam(currentPose));
-    }
-
-    @Override
-    public boolean isComplete(Pose currentPose) {
-        return findBestParam(currentPose) >= numSegments - COMPLETION_PARAM_EPSILON;
+    protected double getMaxParam() {
+        return numSegments;
     }
 }
