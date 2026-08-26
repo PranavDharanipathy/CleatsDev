@@ -27,6 +27,10 @@ public class SlipPreventedWheel {
         wheel.setDirection(direction);
     }
 
+    public void setZeroPowerBehavior(DcMotor.ZeroPowerBehavior zeroPowerBehavior) {
+        wheel.setZeroPowerBehavior(zeroPowerBehavior);
+    }
+
     public void setPower(double requestedPower, double dt) {
 
         prevPower = currPower;

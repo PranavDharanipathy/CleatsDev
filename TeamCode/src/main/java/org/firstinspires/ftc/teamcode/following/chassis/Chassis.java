@@ -22,6 +22,11 @@ public class Chassis {
         rf.setDirection(motorDirections[1]);
         lb.setDirection(motorDirections[2]);
         rb.setDirection(motorDirections[3]);
+
+        lf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rf.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        lb.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rb.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     public void setDrivePower(double forward, double strafe, double turn, double dt) {
