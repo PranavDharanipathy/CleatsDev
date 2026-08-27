@@ -12,11 +12,11 @@ public abstract class Curve extends Movement {
     private static final int REFINE_SAMPLES = 20;
     private static final double COMPLETION_PARAM_EPSILON = 0.02;
 
-    /// @param u ranges from 0 to getMaxParameter()
+    /// @param u ranges from 0 to {@link #getMaxParam}
     /// @return the position and heading on the curve at parameter u
     protected abstract Pose evaluate(double u);
 
-    /// @return the upper end of this curve's parameter range which starts at 0
+    /// @return the upper end of the curve's parameter range (it starts at 0)
     protected abstract double getMaxParam();
 
     protected double findBestParam(Pose currentPose) {
@@ -66,5 +66,10 @@ public abstract class Curve extends Movement {
     @Override
     public boolean isComplete(Pose currentPose) {
         return findBestParam(currentPose) >= getMaxParam() - COMPLETION_PARAM_EPSILON;
+    }
+
+    @Override
+    public Pose getEndPose() {
+        return evaluate(getMaxParam());
     }
 }

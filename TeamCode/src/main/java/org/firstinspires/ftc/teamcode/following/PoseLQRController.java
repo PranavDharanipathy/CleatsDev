@@ -1,6 +1,6 @@
-package org.firstinspires.ftc.teamcode.util;
+package org.firstinspires.ftc.teamcode.following;
 
-public class LQRController {
+public class PoseLQRController {
 
     // Thanos might not have been inevitable, you can bet Cleats is.
 
@@ -13,7 +13,7 @@ public class LQRController {
     /// @param qPositionHeading heading error weight
     /// @param qVelocityHeading angular velocity error weight
     /// @param rHeading heading control effort weight
-    public LQRController(
+    public PoseLQRController(
             double qPosition, double qVelocity, double r,
             double qPositionHeading, double qVelocityHeading, double rHeading
     ) {
@@ -27,14 +27,14 @@ public class LQRController {
 
     /// @param positionError actual minus target, along one translational axis
     /// @param velocity actual velocity along that same axis
-    /// @return commanded acceleration correction along that axis
+    /// @return required acceleration correction command along that axis
     public double correctTranslation(double positionError, double velocity) {
         return -k1Translation * positionError - k2Translation * velocity;
     }
 
     /// @param headingError actual minus target (normalized)
     /// @param angularVelocity actual angular velocity
-    /// @return commanded angular acceleration correction
+    /// @return required angular acceleration correction command
     public double correctHeading(double headingError, double angularVelocity) {
         return -k1Heading * headingError - k2Heading * angularVelocity;
     }
