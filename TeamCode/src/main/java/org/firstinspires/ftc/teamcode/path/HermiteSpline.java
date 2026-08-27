@@ -25,10 +25,12 @@ public class HermiteSpline extends Curve {
             if (i == 0) {
                 tangentX[i] = points[1].x - points[0].x;
                 tangentY[i] = points[1].y - points[0].y;
-            } else if (i == points.length - 1) {
+            }
+            else if (i == points.length - 1) {
                 tangentX[i] = points[i].x - points[i - 1].x;
                 tangentY[i] = points[i].y - points[i - 1].y;
-            } else {
+            }
+            else {
                 tangentX[i] = (points[i + 1].x - points[i - 1].x) / 2d;
                 tangentY[i] = (points[i + 1].y - points[i - 1].y) / 2d;
             }
