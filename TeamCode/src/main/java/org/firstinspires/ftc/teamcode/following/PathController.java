@@ -22,14 +22,14 @@ public class PathController {
     }
 
     private final Chassis chassis;
+    private final MotionConstraints motionConstraints;
+    private final MecanumProfile mecanumProfile;
 
     private final FinalLocalizer localizer;
     private Pose pose, velocity, acceleration, jerk;
 
     private double dt;
 
-    private final MotionConstraints motionConstraints;
-    private final MecanumProfile mecanumProfile;
     private final PoseLQRController poseLQR;
     private final PrecisionModeThresholds precisionModeThresholds;
 
@@ -85,13 +85,13 @@ public class PathController {
             if (currentMovement.isComplete(pose)) {
                 chassis.setDrivePower(0, 0, 0, dt);
                 currentMovement = null;
+            } else {
+                driveToPose(currentMovement.getTarget(pose));
             }
-            else driveToPose(currentMovement.getTarget(pose));
-
             return;
         }
 
-        final Pose endPose = currentMovement.getEndPose();
+        Pose endPose = currentMovement.getEndPose();
         updateMode(endPose);
 
         if (mode == Mode.PRECISION) drivePrecisionMode(endPose);
@@ -105,28 +105,28 @@ public class PathController {
         final double headingError = Math.abs(MathHelper.normalizeAngleRad(pose.heading - endPose.heading));
         final double angularSpeed = Math.abs(velocity.heading);
 
-        //mode switching state machine
+        //mode switching
         if (mode == Mode.TRANSIT) {
 
-            boolean withinEntry = positionDistance < precisionModeThresholds.entryPositionDistance
-                    && speed < precisionModeThresholds.entryVelocity
-                    && headingError < precisionModeThresholds.entryHeadingError
-                    && angularSpeed < precisionModeThresholds.entryAngularVelocity;
+            boolean withinEntry = positionDistance < precisionModeThresholds.getEntryPositionDistance()
+                    && speed < precisionModeThresholds.getEntryVelocity()
+                    && headingError < precisionModeThresholds.getEntryHeadingError()
+                    && angularSpeed < precisionModeThresholds.getEntryAngularVelocity();
 
             if (withinEntry) mode = Mode.PRECISION;
         }
         else {
 
-            boolean pastExit = positionDistance > precisionModeThresholds.exitPositionDistance
-                    || speed > precisionModeThresholds.exitVelocity
-                    || headingError > precisionModeThresholds.exitHeadingError
-                    || angularSpeed > precisionModeThresholds.exitAngularVelocity;
+            boolean pastExit = positionDistance > precisionModeThresholds.getExitPositionDistance()
+                    || speed > precisionModeThresholds.getExitVelocity()
+                    || headingError > precisionModeThresholds.getExitHeadingError()
+                    || angularSpeed > precisionModeThresholds.getExitAngularVelocity();
 
             if (pastExit) mode = Mode.TRANSIT;
         }
     }
 
-    public void driveToPose(Pose target) {
+    private void driveToPose(Pose target) {
 
         double dx = target.x - pose.x;
         double dy = target.y - pose.y;
@@ -176,8 +176,8 @@ public class PathController {
 
         double headingError = MathHelper.normalizeAngleRad(pose.heading - target.heading);
 
-        double forwardCorrection = poseLQR.correctTranslation(forwardError, forwardVelocity);
-        double strafeCorrection = poseLQR.correctTranslation(strafeError, strafeVelocity);
+        double forwardCorrection = poseLQR.correctForward(forwardError, forwardVelocity);
+        double strafeCorrection = poseLQR.correctStrafe(strafeError, strafeVelocity);
         double headingCorrection = poseLQR.correctHeading(headingError, velocity.heading);
 
         double forwardPower = MathHelper.clamp(forwardCorrection / mecanumProfile.getMaxAcceleration(0), -1, 1);

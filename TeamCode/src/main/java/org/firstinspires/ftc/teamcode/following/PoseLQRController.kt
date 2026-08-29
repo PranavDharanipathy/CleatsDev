@@ -1,41 +1,84 @@
-package org.firstinspires.ftc.teamcode.following;
+package org.firstinspires.ftc.teamcode.following
 
-public class PoseLQRController {
-
+class PoseLQRController(
+    qPositionForward: Double,
+    qVelocityForward: Double,
+    rForward: Double,
+    qPositionStrafe: Double,
+    qVelocityStrafe: Double,
+    rStrafe: Double,
+    qPositionHeading: Double,
+    qVelocityHeading: Double,
+    rHeading: Double
+) {
     // Thanos might not have been inevitable, you can bet Cleats is.
 
-    private final double k1Translation, k2Translation;
-    private final double k1Heading, k2Heading;
+    private val k1Forward: Double
+    private val k2Forward: Double
 
-    /// @param qPosition translational position error weight
-    /// @param qVelocity translational velocity error weight
-    /// @param r translational control effort weight
-    /// @param qPositionHeading heading error weight
-    /// @param qVelocityHeading angular velocity error weight
-    /// @param rHeading heading control effort weight
-    public PoseLQRController(
-            double qPosition, double qVelocity, double r,
-            double qPositionHeading, double qVelocityHeading, double rHeading
-    ) {
+    private val k1Strafe: Double
+    private val k2Strafe: Double
 
-        k1Translation = Math.sqrt(qPosition / r);
-        k2Translation = Math.sqrt(2d * k1Translation + qVelocity / r);
+    private val k1Heading: Double
+    private val k2Heading: Double
 
-        k1Heading = Math.sqrt(qPositionHeading / rHeading);
-        k2Heading = Math.sqrt(2d * k1Heading + qVelocityHeading / rHeading);
+    /**
+     * Creates a pose LQR controller.
+     *
+     * @param qPositionForward forward position error weight
+     * @param qVelocityForward forward velocity error weight
+     * @param rForward forward control effort weight
+     * @param qPositionStrafe strafe position error weight
+     * @param qVelocityStrafe strafe velocity error weight
+     * @param rStrafe strafe control effort weight
+     * @param qPositionHeading heading error weight
+     * @param qVelocityHeading angular velocity error weight
+     * @param rHeading heading control effort weight
+     */
+    init {
+        k1Forward = kotlin.math.sqrt(qPositionForward / rForward)
+        k2Forward = kotlin.math.sqrt(
+            2.0 * k1Forward + qVelocityForward / rForward
+        )
+
+        k1Strafe = kotlin.math.sqrt(qPositionStrafe / rStrafe)
+        k2Strafe = kotlin.math.sqrt(
+            2.0 * k1Strafe + qVelocityStrafe / rStrafe
+        )
+
+        k1Heading = kotlin.math.sqrt(qPositionHeading / rHeading)
+        k2Heading = kotlin.math.sqrt(
+            2.0 * k1Heading + qVelocityHeading / rHeading
+        )
     }
 
-    /// @param positionError actual minus target, along one translational axis
-    /// @param velocity actual velocity along that same axis
-    /// @return required acceleration correction command along that axis
-    public double correctTranslation(double positionError, double velocity) {
-        return -k1Translation * positionError - k2Translation * velocity;
+    /**
+     * @param positionError actual minus target, along the forward axis
+     * @param velocity actual velocity along that same axis
+     * @return required acceleration correction command along the axis
+     */
+    fun correctForward(positionError: Double, velocity: Double): Double {
+        return -k1Forward * positionError - k2Forward * velocity
     }
 
-    /// @param headingError actual minus target (normalized)
-    /// @param angularVelocity actual angular velocity
-    /// @return required angular acceleration correction command
-    public double correctHeading(double headingError, double angularVelocity) {
-        return -k1Heading * headingError - k2Heading * angularVelocity;
+    /**
+     * @param positionError actual minus target, along the strafe axis
+     * @param velocity actual velocity along that same axis
+     * @return required acceleration correction command along the axis
+     */
+    fun correctStrafe(positionError: Double, velocity: Double): Double {
+        return -k1Strafe * positionError - k2Strafe * velocity
+    }
+
+    /**
+     * @param headingError actual minus target (normalized)
+     * @param angularVelocity actual angular velocity
+     * @return required angular acceleration correction command
+     */
+    fun correctHeading(
+        headingError: Double,
+        angularVelocity: Double
+    ): Double {
+        return -k1Heading * headingError - k2Heading * angularVelocity
     }
 }
