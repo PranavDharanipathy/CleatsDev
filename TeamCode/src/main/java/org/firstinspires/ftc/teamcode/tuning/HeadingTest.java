@@ -4,6 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.following.PathController;
 import org.firstinspires.ftc.teamcode.util.Pose;
 import org.firstinspires.ftc.teamcode.Constants;
 
@@ -13,8 +14,12 @@ public class HeadingTest extends LinearOpMode {
 
     public static double DECEL_RAMP_DURATION = 2;
 
+    private PathController pc;
+
     @Override
     public void runOpMode() {
+
+        pc = Constants.getPathController();
 
         telemetry.addLine("Press A to begin braking.");
         telemetry.addLine("The robot will spin clockwise. Let the robot reach full speed before braking.");
@@ -27,12 +32,12 @@ public class HeadingTest extends LinearOpMode {
 
         while (opModeIsActive() && !gamepad1.a) {
 
-            Constants.getPathController().getChassis().setDrivePowerBypassRamp(0, 0, 1);
+            pc.getChassis().setDrivePowerBypassRamp(0, 0, 1);
 
-            Constants.getPathController().update();
+            pc.update();
 
-            Pose vel = Constants.getPathController().getFinalLocalizer().getVelocity();
-            Pose accel = Constants.getPathController().getFinalLocalizer().getAcceleration();
+            Pose vel = pc.getFinalLocalizer().getVelocity();
+            Pose accel = pc.getFinalLocalizer().getAcceleration();
 
             double accelMagnitude = Math.abs(accel.heading);
             double angularSpeed = Math.abs(vel.heading);
@@ -55,12 +60,12 @@ public class HeadingTest extends LinearOpMode {
             if (t > DECEL_RAMP_DURATION) break;
 
             double commandedPower = -t / DECEL_RAMP_DURATION;
-            Constants.getPathController().getChassis().setDrivePowerBypassRamp(0, 0, commandedPower);
+            pc.getChassis().setDrivePowerBypassRamp(0, 0, commandedPower);
 
-            Constants.getPathController().update();
+            pc.update();
 
-            Pose vel = Constants.getPathController().getFinalLocalizer().getVelocity();
-            Pose accel = Constants.getPathController().getFinalLocalizer().getAcceleration();
+            Pose vel = pc.getFinalLocalizer().getVelocity();
+            Pose accel = pc.getFinalLocalizer().getAcceleration();
 
             double accelMagnitude = Math.abs(accel.heading);
             peakDecel = Math.max(peakDecel, accelMagnitude);
@@ -73,7 +78,7 @@ public class HeadingTest extends LinearOpMode {
             telemetry.update();
         }
 
-        Constants.getPathController().getChassis().setDrivePowerBypassRamp(0, 0, 0);
+        pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
         telemetry.addLine("=== HEADING RESULTS ===");
         telemetry.addData("amaxH (rad/s^2)", peakAccel);

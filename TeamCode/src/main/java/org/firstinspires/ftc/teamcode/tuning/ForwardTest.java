@@ -4,6 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.following.PathController;
 import org.firstinspires.ftc.teamcode.util.Pose;
 import org.firstinspires.ftc.teamcode.Constants;
 
@@ -13,8 +14,12 @@ public class ForwardTest extends LinearOpMode {
 
     public static double DECEL_RAMP_DURATION = 2;
 
+    private PathController pc;
+
     @Override
     public void runOpMode() {
+
+        pc = Constants.getPathController();
 
         telemetry.addLine("Press A to begin braking.");
         telemetry.addLine("The robot will move forward. Let the robot cruise for as long as possible before braking.");
@@ -27,12 +32,12 @@ public class ForwardTest extends LinearOpMode {
 
         while (opModeIsActive() && !gamepad1.a) {
 
-            Constants.getPathController().getChassis().setDrivePowerBypassRamp(1, 0, 0);
+            pc.getChassis().setDrivePowerBypassRamp(1, 0, 0);
 
-            Constants.getPathController().update();
+            pc.update();
 
-            Pose vel = Constants.getPathController().getFinalLocalizer().getVelocity();
-            Pose accel = Constants.getPathController().getFinalLocalizer().getAcceleration();
+            Pose vel = pc.getFinalLocalizer().getVelocity();
+            Pose accel = pc.getFinalLocalizer().getAcceleration();
 
             double accelMagnitude = Math.hypot(accel.x, accel.y);
             double speed = Math.hypot(vel.x, vel.y);
@@ -55,13 +60,13 @@ public class ForwardTest extends LinearOpMode {
             if (t > DECEL_RAMP_DURATION) break;
 
             double commandedPower = -t / DECEL_RAMP_DURATION;
-            Constants.getPathController().getChassis().setDrivePowerBypassRamp(commandedPower, 0, 0);
+            pc.getChassis().setDrivePowerBypassRamp(commandedPower, 0, 0);
 
-            Constants.getPathController().update();
+            pc.update();
 
-            Pose pose = Constants.getPathController().getFinalLocalizer().getPose();
-            Pose vel = Constants.getPathController().getFinalLocalizer().getVelocity();
-            Pose accel = Constants.getPathController().getFinalLocalizer().getAcceleration();
+            Pose pose = pc.getFinalLocalizer().getPose();
+            Pose vel = pc.getFinalLocalizer().getVelocity();
+            Pose accel = pc.getFinalLocalizer().getAcceleration();
 
             double accelMagnitude = Math.hypot(accel.x, accel.y);
             peakDecel = Math.max(peakDecel, accelMagnitude);
@@ -75,7 +80,7 @@ public class ForwardTest extends LinearOpMode {
             telemetry.update();
         }
 
-        Constants.getPathController().getChassis().setDrivePowerBypassRamp(0, 0, 0);
+        pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
         telemetry.addLine("=== FORWARD RESULTS ===");
         telemetry.addData("amaxF (in/s^2)", peakAccel);
