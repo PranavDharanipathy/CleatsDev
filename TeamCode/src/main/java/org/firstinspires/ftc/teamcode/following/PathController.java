@@ -85,9 +85,9 @@ public class PathController {
             if (currentMovement.isComplete(pose)) {
                 chassis.setDrivePower(0, 0, 0, dt);
                 currentMovement = null;
-            } else {
-                driveToPose(currentMovement.getTarget(pose));
             }
+            else driveToPose(currentMovement.getTarget(pose));
+
             return;
         }
 

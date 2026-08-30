@@ -3,14 +3,12 @@ package org.firstinspires.ftc.teamcode.following
 class PoseLQRController(
     qPositionForward: Double,
     qVelocityForward: Double,
-    rForward: Double,
     qPositionStrafe: Double,
     qVelocityStrafe: Double,
-    rStrafe: Double,
     qPositionHeading: Double,
     qVelocityHeading: Double,
-    rHeading: Double
 ) {
+
     // Thanos might not have been inevitable, you can bet Cleats is.
 
     private val k1Forward: Double
@@ -27,29 +25,20 @@ class PoseLQRController(
      *
      * @param qPositionForward forward position error weight
      * @param qVelocityForward forward velocity error weight
-     * @param rForward forward control effort weight
      * @param qPositionStrafe strafe position error weight
      * @param qVelocityStrafe strafe velocity error weight
-     * @param rStrafe strafe control effort weight
      * @param qPositionHeading heading error weight
      * @param qVelocityHeading angular velocity error weight
-     * @param rHeading heading control effort weight
      */
     init {
-        k1Forward = kotlin.math.sqrt(qPositionForward / rForward)
-        k2Forward = kotlin.math.sqrt(
-            2.0 * k1Forward + qVelocityForward / rForward
-        )
+        k1Forward = kotlin.math.sqrt(qPositionForward)
+        k2Forward = kotlin.math.sqrt(2.0 * k1Forward + qVelocityForward)
 
-        k1Strafe = kotlin.math.sqrt(qPositionStrafe / rStrafe)
-        k2Strafe = kotlin.math.sqrt(
-            2.0 * k1Strafe + qVelocityStrafe / rStrafe
-        )
+        k1Strafe = kotlin.math.sqrt(qPositionStrafe)
+        k2Strafe = kotlin.math.sqrt(2.0 * k1Strafe + qVelocityStrafe)
 
-        k1Heading = kotlin.math.sqrt(qPositionHeading / rHeading)
-        k2Heading = kotlin.math.sqrt(
-            2.0 * k1Heading + qVelocityHeading / rHeading
-        )
+        k1Heading = kotlin.math.sqrt(qPositionHeading)
+        k2Heading = kotlin.math.sqrt(2.0 * k1Heading + qVelocityHeading)
     }
 
     /**
@@ -75,10 +64,7 @@ class PoseLQRController(
      * @param angularVelocity actual angular velocity
      * @return required angular acceleration correction command
      */
-    fun correctHeading(
-        headingError: Double,
-        angularVelocity: Double
-    ): Double {
+    fun correctHeading(headingError: Double, angularVelocity: Double): Double {
         return -k1Heading * headingError - k2Heading * angularVelocity
     }
 }
