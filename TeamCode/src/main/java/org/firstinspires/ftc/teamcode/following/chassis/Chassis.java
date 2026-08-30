@@ -29,6 +29,7 @@ public class Chassis {
         rb.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
+    /// Sets wheel powers with anti-slip compensation
     public void setDrivePower(double forward, double strafe, double turn, double dt) {
 
         double lfPower = forward + strafe + turn;
@@ -45,6 +46,7 @@ public class Chassis {
         rb.setPower(rbPower * scale, dt);
     }
 
+    /// Sets wheel powers without anti-slip compensation
     public void setDrivePowerBypassRamp(double forward, double strafe, double turn) {
 
         double lfPower = forward + strafe + turn;

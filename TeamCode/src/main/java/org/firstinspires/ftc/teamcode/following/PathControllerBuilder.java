@@ -112,7 +112,7 @@ public class PathControllerBuilder {
                         hardwareMap,
                         chassisMotorNamesConfig.assemble(),
                         chassisMotorDirectionsConfig.assemble(),
-                        motionConstraints.getAmaxF() / motionConstraints.getVmaxF()
+                        motionConstraints.getAntiSlipRampRate()
                 ),
                 localizer,
                 motionConstraints

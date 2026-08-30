@@ -25,4 +25,6 @@ data class MotionConstraints(
         )
     }
 
+    fun getAntiSlipRampRate(): Double = amaxF / vmaxF
+
 }
