@@ -146,7 +146,7 @@ public class PathController {
         double translationSign = translationAccelerating ? 1 : -1;
 
         double desiredForward = translationSign * Math.cos(robotFrameAngle);
-        double desiredStrafe = translationSign * Math.sin(robotFrameAngle);
+        double desiredStrafe = -translationSign * Math.sin(robotFrameAngle);
 
         double headingError = MathHelper.normalizeAngleRad(target.heading - pose.heading);
         double remainingHeading = Math.abs(headingError);
@@ -211,7 +211,7 @@ public class PathController {
         return mode == Mode.PRECISION;
     }
 
-    /// @return If the robot isn't following a path or if precision mode has
+    /// @return if the robot isn't following a path or if precision mode has
     /// taken over
     public boolean hasSettled() {
         return mode == Mode.PRECISION || currentMovement == null;

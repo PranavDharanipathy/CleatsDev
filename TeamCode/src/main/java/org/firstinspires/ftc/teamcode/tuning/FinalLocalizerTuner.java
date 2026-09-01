@@ -35,6 +35,14 @@ public class FinalLocalizerTuner extends OpMode {
         chassis = pc.getChassis();
         finalLocalizer = new FinalLocalizer(pc.getFinalLocalizer().getLocalizer()); //custom copy with same localizer
 
+        //default values
+        double[] defaultParams = {1, 1, 1}; // {q, r, outlierThresholdMultiplier}
+        finalLocalizer.setNoiseFilterParameters(
+                defaultParams, defaultParams, defaultParams,
+                defaultParams, defaultParams, defaultParams,
+                defaultParams, defaultParams, defaultParams
+        );
+
         telemetry.addLine("Stage 1: velocity x");
         telemetry.addLine("Stage 2: velocity y");
         telemetry.addLine("Stage 3: velocity heading");

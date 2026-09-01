@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.tuning;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -22,7 +21,7 @@ public class TranslationLQRTest extends LinearOpMode {
 
     public static double TEST_DISTANCE = 12; //inches
 
-    private static final double ALREADY_CLOSE_THRESHOLD = 1; //inches
+    private static final double ALREADY_CLOSE_THRESHOLD_POSITION = 1; //inches
     private static final double MAX_RETURN_TIME = 5;
 
     private PathController pc;
@@ -130,7 +129,7 @@ public class TranslationLQRTest extends LinearOpMode {
                 telemetry.addData("did robot timeout", timedOut);
                 telemetry.update();
 
-                if (distance < ALREADY_CLOSE_THRESHOLD || timedOut) break;
+                if (distance < ALREADY_CLOSE_THRESHOLD_POSITION || timedOut) break;
             }
 
             pc.getChassis().setDrivePower(0, 0, 0, pc.getFinalLocalizer().getDeltaTime());

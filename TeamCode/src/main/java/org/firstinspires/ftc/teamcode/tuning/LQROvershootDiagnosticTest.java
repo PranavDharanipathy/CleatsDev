@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.tuning;
 
 import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -22,8 +21,8 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
     private static final double ALREADY_CLOSE_NOISE_MULTIPLIER = 30; //determined using three sigma rule
 
     //minimums
-    private static final double MIN_POSITION_ALREADY_CLOSE_THRESHOLD = 1;
-    private static final double MIN_HEADING_ALREADY_CLOSE_THRESHOLD = Math.toRadians(3);
+    private static final double MIN_ALREADY_CLOSE_THRESHOLD_POSITION = 1;
+    private static final double MIN_ALREADY_CLOSE_THRESHOLD_HEADING = Math.toRadians(3);
 
     private Telemetry telemetry;
 
@@ -82,14 +81,14 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
         final double positionNoise = Math.sqrt(xVariance + yVariance);
         final double headingNoise = Math.sqrt(headingVariance);
 
-        final double positionAlreadyCloseThreshold = Math.max(MIN_POSITION_ALREADY_CLOSE_THRESHOLD, positionNoise * ALREADY_CLOSE_NOISE_MULTIPLIER);
-        final double headingAlreadyCloseThreshold = Math.max(MIN_HEADING_ALREADY_CLOSE_THRESHOLD, headingNoise * ALREADY_CLOSE_NOISE_MULTIPLIER);
+        final double positionAlreadyCloseThreshold = Math.max(MIN_ALREADY_CLOSE_THRESHOLD_POSITION, positionNoise * ALREADY_CLOSE_NOISE_MULTIPLIER);
+        final double headingAlreadyCloseThreshold = Math.max(MIN_ALREADY_CLOSE_THRESHOLD_HEADING, headingNoise * ALREADY_CLOSE_NOISE_MULTIPLIER);
 
         telemetry.addLine("=== FOR TranslationLQRTest ===");
-        telemetry.addData("ALREADY_CLOSE_THRESHOLD (in)", positionAlreadyCloseThreshold);
+        telemetry.addData("ALREADY_CLOSE_THRESHOLD_POSITION (in)", positionAlreadyCloseThreshold);
 
         telemetry.addLine("=== FOR HeadingLQRTest ===");
-        telemetry.addData("ALREADY_CLOSE_THRESHOLD (rad)", headingAlreadyCloseThreshold);
+        telemetry.addData("ALREADY_CLOSE_THRESHOLD_HEADING (rad)", headingAlreadyCloseThreshold);
 
         telemetry.update();
 
