@@ -49,38 +49,30 @@ public class HermiteSpline extends Curve {
         }
     }
 
-    /// Face the opposite direction while following (drive tail-first). Only affects
-    /// tangential (and custom) heading ops. @return this, for chaining.
+    /// Faces the opposite direction while following.
     public HermiteSpline setReversed(boolean reversed) {
         this.reversed = reversed;
         return this;
     }
 
-    /// Sets how the robot should be oriented along this path. If never called, heading comes
-    /// from the poses' own headings (legacy behavior). @return this, for chaining.
+    /// Sets how the robot's heading should be handled for the path.
     public HermiteSpline setHeadingOp(HeadingOp headingOp) {
         this.headingOp = headingOp;
         return this;
     }
 
-    /// Enables replanning for this spline. If the robot strays farther than offShootDistance
-    /// from the path, the spline is rebuilt from the robot's current pose through the waypoints
-    /// still ahead, ending at the same end pose. @return this, for chaining.
     public HermiteSpline setReplan(double offShootDistance) {
         setReplanner(this::replanFrom, offShootDistance);
         return this;
     }
 
-    /// Builds a fresh quintic Hermite spline from the robot's current pose through the original
-    /// waypoints still ahead of it, ending at the original end pose. Heading op, reversed flag,
-    /// and replanning carry over; progress is remapped so the heading op stays continuous.
     private HermiteSpline replanFrom(Pose currentPose) {
 
         double u = findBestParam(currentPose);
 
-        // first original waypoint strictly ahead of the current projection
+        //first waypoint ahead of the current projection
         int firstAhead = MathHelper.clamp((int) Math.floor(u) + 1, 1, numSegments);
-        int aheadCount = numSegments - firstAhead + 1; // points[firstAhead .. numSegments]
+        int aheadCount = numSegments - firstAhead + 1;
 
         Pose[] newPoints = new Pose[1 + aheadCount];
         newPoints[0] = currentPose;
@@ -90,17 +82,16 @@ public class HermiteSpline extends Curve {
 
         HermiteSpline replanned = new HermiteSpline(newPoints);
 
-        // carry heading + direction settings onto the replanned path
         replanned.headingOp = this.headingOp;
         replanned.reversed = this.reversed;
 
-        // remap progress so the heading op continues from where we are (no heading jump)
         double localProgress = numSegments > 0 ? MathHelper.clamp(u / numSegments, 0, 1) : 0;
         double originalProgressAtReplan = progressStart + localProgress * progressSpan;
+
         replanned.progressStart = originalProgressAtReplan;
         replanned.progressSpan = (progressStart + progressSpan) - originalProgressAtReplan;
 
-        return replanned.setReplan(getReplanOffShootDistance()); // keep replanning downstream
+        return replanned.setReplan(getReplanOffShootDistance());
     }
 
     @Override

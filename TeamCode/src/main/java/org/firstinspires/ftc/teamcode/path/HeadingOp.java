@@ -11,7 +11,6 @@ public interface HeadingOp {
 
     double DEFAULT_EXPONENTIAL_RATE = 4;
 
-    /// @return the target heading in radians
     /// @param progress progress along the path (0 to 1)
     /// @param x position on the path here, inches
     /// @param y position on the path here, inches
