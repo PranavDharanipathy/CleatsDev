@@ -10,8 +10,8 @@ public abstract class Movement {
 
     public abstract Pose getEndPose();
 
-    private Replanner replanner; // null => replanning disabled
-    private double replanOffShootDistance; // path error beyond this triggers a replan
+    private Replanner replanner;
+    private double replanOffShootDistance;
 
     /// Adds an optional replanning algorithm. When the robot's path error
     /// determined by {@link #getPathError} exceeds offShootDistance, the

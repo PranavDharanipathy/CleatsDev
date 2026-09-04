@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.path;
 
+import org.apache.commons.math3.util.FastMath;
+
+import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
 
 /// Base class for any curve type that should be followed via nearest-point projection.
@@ -12,20 +15,42 @@ public abstract class Curve extends Movement {
     private static final int REFINE_SAMPLES = 20;
     private static final double COMPLETION_PARAM_EPSILON = 0.02;
 
-    // info is cached to prevent the redundant recalculation
+    protected HeadingOp headingOp = HeadingOp.tangentialHeading();
+    protected boolean reversed = false;
+
+    protected double progressStart = 0;
+    protected double progressSpan = 1;
+
+    //info is cached to prevent the redundant recalculation
     private boolean hasProjectionCache;
     private double cacheX, cacheY, cacheParam, cacheDistance;
 
     /// @param u ranges from 0 to {@link #getMaxParam}
-    /// @return the position and heading on the curve at parameter u
+    /// @return the position on the curve at parameter u
     protected abstract Pose evaluate(double u);
 
     /// @return the upper end of the curve's parameter range (it starts at 0)
     protected abstract double getMaxParam();
 
+    protected double tangentAngle(double u) {
+
+        double maxParam = getMaxParam();
+        double h = maxParam * 1e-4 + 1e-6;
+
+        double u0 = Math.max(0, u - h);
+        double u1 = Math.min(maxParam, u + h);
+
+        Pose a = evaluate(u0);
+        Pose b = evaluate(u1);
+
+        return FastMath.atan2(b.y - a.y, b.x - a.x);
+    }
+
     protected double findBestParam(Pose currentPose) {
 
-        if (hasProjectionCache && cacheX == currentPose.x && cacheY == currentPose.y) return cacheParam;
+        if (hasProjectionCache && cacheX == currentPose.x && cacheY == currentPose.y) {
+            return cacheParam;
+        }
 
         double maxParam = getMaxParam();
         int coarseSamples = Math.max(1, (int) Math.ceil(COARSE_SAMPLES_PER_UNIT * maxParam));
@@ -70,9 +95,24 @@ public abstract class Curve extends Movement {
         return bestU;
     }
 
+    private Pose resolvePose(double u) {
+
+        Pose point = evaluate(u);
+
+        if (headingOp == null) return point; //only if 'null' is explicitly provided
+
+        double maxParam = getMaxParam();
+        double localProgress = maxParam > 0 ? MathHelper.clamp(u / maxParam, 0, 1) : 0;
+        double progress = progressStart + localProgress * progressSpan;
+
+        double heading = headingOp.heading(progress, point.x, point.y, tangentAngle(u), reversed);
+
+        return new Pose(point.x, point.y, heading);
+    }
+
     @Override
     public Pose getTarget(Pose currentPose) {
-        return evaluate(findBestParam(currentPose));
+        return resolvePose(findBestParam(currentPose));
     }
 
     @Override
@@ -82,9 +122,10 @@ public abstract class Curve extends Movement {
 
     @Override
     public Pose getEndPose() {
-        return evaluate(getMaxParam());
+        return resolvePose(getMaxParam());
     }
 
+    /// Cross-track distance from the robot to the nearest point on the curve.
     @Override
     public double getPathError(Pose currentPose) {
         findBestParam(currentPose);

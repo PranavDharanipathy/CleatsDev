@@ -8,6 +8,7 @@ import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.following.PathController;
 import org.firstinspires.ftc.teamcode.following.PoseLQRController;
 import org.firstinspires.ftc.teamcode.following.chassis.MecanumProfile;
+import org.firstinspires.ftc.teamcode.path.HeadingOp;
 import org.firstinspires.ftc.teamcode.path.HermiteSpline;
 import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.PoseLQRTuner;
@@ -42,7 +43,10 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
     private PathController pc;
     private PoseLQRTuner tuner;
     private MecanumProfile profile;
-    private double amaxH, dmaxH;
+    private double dmaxH;
+    private double amaxH;
+
+    private boolean bWasPressed = false;
 
     @Override
     public void runOpMode() {
@@ -107,8 +111,6 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
 
         while (opModeIsActive()) ;
     }
-
-    private boolean bWasPressed = false;
 
     private void checkManualDriving() {
 
@@ -226,7 +228,8 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
         double awayY = localStart.y + (distance / Math.sqrt(2d)) * (Math.sin(localStart.heading) - Math.cos(localStart.heading));
         Pose away = new Pose(awayX, awayY, localStart.heading);
 
-        pc.follow(new HermiteSpline(localStart, away), false);
+        pc.follow(new HermiteSpline(localStart, away)
+                .setHeadingOp(HeadingOp.constantHeading(localStart.heading)), false);
 
         while (opModeIsActive() && pc.isFollowing()) {
 
@@ -312,7 +315,8 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
         double startHeading = localStart.heading;
         Pose away = new Pose(localStart.x, localStart.y, startHeading + angle);
 
-        pc.follow(new HermiteSpline(localStart, away), false);
+        pc.follow(new HermiteSpline(localStart, away)
+                .setHeadingOp(HeadingOp.linearHeading(startHeading, startHeading + angle)), false);
 
         while (opModeIsActive() && pc.isFollowing()) {
 

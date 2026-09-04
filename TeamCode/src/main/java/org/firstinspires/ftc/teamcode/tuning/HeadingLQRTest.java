@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.tuning;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.following.PathController;
 import org.firstinspires.ftc.teamcode.following.PoseLQRController;
+import org.firstinspires.ftc.teamcode.path.HeadingOp;
 import org.firstinspires.ftc.teamcode.path.HermiteSpline;
 import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.PoseLQRTuner;
@@ -53,7 +55,8 @@ public class HeadingLQRTest extends LinearOpMode {
             //turn away
             Pose currentPose = pc.getFinalLocalizer().getPose();
             Pose away = new Pose(currentPose.x, currentPose.y, awayHeading);
-            pc.follow(new HermiteSpline(currentPose, away), false);
+            pc.follow(new HermiteSpline(currentPose, away)
+                    .setHeadingOp(HeadingOp.linearHeading(currentPose.heading, awayHeading)), false);
 
             while (opModeIsActive() && pc.isFollowing()) {
 

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.tuning;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -7,6 +8,7 @@ import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.following.PathController;
 import org.firstinspires.ftc.teamcode.following.PoseLQRController;
 import org.firstinspires.ftc.teamcode.following.chassis.MecanumProfile;
+import org.firstinspires.ftc.teamcode.path.HeadingOp;
 import org.firstinspires.ftc.teamcode.path.HermiteSpline;
 import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.PoseLQRTuner;
@@ -54,7 +56,8 @@ public class TranslationLQRTest extends LinearOpMode {
             if (gamepad1.a) stopRequested = true;
 
             //driving away
-            pc.follow(new HermiteSpline(pc.getFinalLocalizer().getPose(), away), false);
+            pc.follow(new HermiteSpline(pc.getFinalLocalizer().getPose(), away)
+                    .setHeadingOp(HeadingOp.constantHeading(start.heading)), false);
 
             while (opModeIsActive() && pc.isFollowing()) {
 
