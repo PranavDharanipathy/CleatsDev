@@ -7,7 +7,7 @@ public class FinalLocalizer {
 
     // heh heh heh heh, SIUUUUUUUUUUUUUUUUUUUUUU!!!
 
-    private Pose pose, velocity, acceleration, jerk;
+    private Pose pose, velocity, acceleration;
     private Pose prevVelocity, prevAcceleration;
     private double deltaTime;
 
@@ -15,14 +15,12 @@ public class FinalLocalizer {
 
     public final NoiseKalmanFilter velocityX, velocityY, velocityHeading;
     public final NoiseKalmanFilter accelerationX, accelerationY, accelerationHeading;
-    public final NoiseKalmanFilter jerkX, jerkY, jerkHeading;
 
     public FinalLocalizer(Localizer localizer) {
 
         pose = new Pose(0,0,0);
         velocity = new Pose(0,0,0);
         acceleration = new Pose(0,0,0);
-        jerk = new Pose(0,0,0);
 
         prevVelocity = new Pose(0,0,0);
         prevAcceleration = new Pose(0,0,0);
@@ -39,10 +37,6 @@ public class FinalLocalizer {
         accelerationY = new NoiseKalmanFilter(true);
         accelerationHeading = new NoiseKalmanFilter(true);
 
-        jerkX = new NoiseKalmanFilter(true);
-        jerkY = new NoiseKalmanFilter(true);
-        jerkHeading = new NoiseKalmanFilter(true);
-
         areParametersSet = false;
     }
 
@@ -53,10 +47,7 @@ public class FinalLocalizer {
             double[] velocityHeadingParams,
             double[] accelerationXParams,
             double[] accelerationYParams,
-            double[] accelerationHeadingParams,
-            double[] jerkXParams,
-            double[] jerkYParams,
-            double[] jerkHeadingParams
+            double[] accelerationHeadingParams
     ) {
 
         setNKFParams(velocityX, velocityXParams);
@@ -66,10 +57,6 @@ public class FinalLocalizer {
         setNKFParams(accelerationX, accelerationXParams);
         setNKFParams(accelerationY, accelerationYParams);
         setNKFParams(accelerationHeading, accelerationHeadingParams);
-
-        setNKFParams(jerkX, jerkXParams);
-        setNKFParams(jerkY, jerkYParams);
-        setNKFParams(jerkHeading, jerkHeadingParams);
 
         areParametersSet = true;
     }
@@ -111,14 +98,6 @@ public class FinalLocalizer {
 
         acceleration = new Pose(accelerationX.getOutput(), accelerationY.getOutput(), accelerationHeading.getOutput());
 
-        //jerk
-        Pose jerkRaw = acceleration.minus(prevAcceleration).divideBy(deltaTime);
-        jerkX.update(jerkRaw.x, deltaTime);
-        jerkY.update(jerkRaw.y, deltaTime);
-        jerkHeading.update(jerkRaw.heading, deltaTime);
-
-        jerk = new Pose(jerkX.getOutput(), jerkY.getOutput(), jerkHeading.getOutput());
-
         prevVelocity = velocity;
         prevAcceleration = acceleration;
     }
@@ -137,10 +116,6 @@ public class FinalLocalizer {
 
     public Pose getAcceleration() {
         return acceleration;
-    }
-
-    public Pose getJerk() {
-        return jerk;
     }
 
     public Localizer getLocalizer() {

@@ -7,15 +7,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 /// Pose is arithmetically purposed.
 /// <p>
-/// Used for Pose, Pose Velocity, and Pose Acceleration.
-/// <p>
-/// Pose is in inches.
-/// <p>
-/// Pose Velocity is in inches per second.
-/// <p>
-/// Pose Acceleration is in inches per second squared.
-/// <p>
-/// Pose Jerk is in inches per second cubed.
+/// Used for pose, velocity, and acceleration as well a construct
+/// to represent vectors (by ignoring the heading parameter).
 public class Pose {
 
     public double x, y, heading;
@@ -28,6 +21,12 @@ public class Pose {
         this.x = x;
         this.y = y;
         this.heading = heading;
+    }
+
+    /// @param x is in inches
+    /// @param y is in inches
+    public Pose(double x, double y) {
+        this (x, y, 0);
     }
 
     public Pose add(Pose pose) {

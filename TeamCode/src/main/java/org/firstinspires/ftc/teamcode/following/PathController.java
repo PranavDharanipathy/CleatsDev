@@ -76,7 +76,6 @@ public class PathController {
         pose = localizer.getPose();
         velocity = localizer.getVelocity();
         acceleration = localizer.getAcceleration();
-        jerk = localizer.getJerk();
 
         if (currentMovement == null) return;
 
@@ -226,6 +225,30 @@ public class PathController {
     /// @return whether the robot is currently following a {@link Movement}
     public boolean isFollowing() {
         return currentMovement != null;
+    }
+
+    public double getX() {
+        return pose.x;
+    }
+
+    public double getY() {
+        return pose.y;
+    }
+
+    public double getHeading() {
+        return pose.heading;
+    }
+
+    public Pose getPose() {
+        return pose;
+    }
+
+    public Pose getVelocity() {
+        return pose;
+    }
+
+    public Pose getAcceleration() {
+        return pose;
     }
 
 }

@@ -39,7 +39,6 @@ public class FinalLocalizerTuner extends OpMode {
         double[] defaultParams = {1, 1, 1}; // {q, r, outlierThresholdMultiplier}
         finalLocalizer.setNoiseFilterParameters(
                 defaultParams, defaultParams, defaultParams,
-                defaultParams, defaultParams, defaultParams,
                 defaultParams, defaultParams, defaultParams
         );
 
@@ -49,9 +48,6 @@ public class FinalLocalizerTuner extends OpMode {
         telemetry.addLine("Stage 4: acceleration x");
         telemetry.addLine("Stage 5: acceleration y");
         telemetry.addLine("Stage 6: acceleration heading");
-        telemetry.addLine("Stage 7: jerk x");
-        telemetry.addLine("Stage 8: jerk y");
-        telemetry.addLine("Stage 9: jerk heading");
         telemetry.addLine();
         telemetry.addLine("Please tune in order of stages! First tune velocity, then acceleration, and then jerk.");
         telemetry.addLine("Make sure to change stage # before changing KF parameters once you finish tuning one!");
@@ -104,21 +100,6 @@ public class FinalLocalizerTuner extends OpMode {
                 finalLocalizer.accelerationHeading.setParameters(Q, R, OUTLIER_THRESHOLD_MULTIPLIER);
                 break;
 
-            case 7:
-
-                finalLocalizer.jerkX.setParameters(Q, R, OUTLIER_THRESHOLD_MULTIPLIER);
-                break;
-
-            case 8:
-
-                finalLocalizer.jerkY.setParameters(Q, R, OUTLIER_THRESHOLD_MULTIPLIER);
-                break;
-
-            case 9:
-
-                finalLocalizer.jerkHeading.setParameters(Q, R, OUTLIER_THRESHOLD_MULTIPLIER);
-                break;
-
             default:
                 break;
         }
@@ -142,15 +123,6 @@ public class FinalLocalizerTuner extends OpMode {
 
         telemetry.addData("accelerationHeading unfiltered", finalLocalizer.accelerationHeading.getRawData());
         telemetry.addData("accelerationHeading filtered", finalLocalizer.accelerationHeading.getOutput());
-
-        telemetry.addData("jerkX unfiltered", finalLocalizer.jerkX.getRawData());
-        telemetry.addData("jerkX filtered", finalLocalizer.jerkX.getOutput());
-
-        telemetry.addData("jerkY unfiltered", finalLocalizer.jerkY.getRawData());
-        telemetry.addData("jerkY filtered", finalLocalizer.jerkY.getOutput());
-
-        telemetry.addData("jerkHeading unfiltered", finalLocalizer.jerkHeading.getRawData());
-        telemetry.addData("jerkHeading filtered", finalLocalizer.jerkHeading.getOutput());
 
         telemetry.update();
     }
