@@ -10,6 +10,10 @@ public class MathHelper {
         return Math.max(min, Math.min(value, max));
     }
 
+    public static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(value, max));
+    }
+
     public static double normalizeAngleRad(double angleRad) {
         return FastMath.atan2(Math.sin(angleRad), Math.cos(angleRad));
     }

@@ -86,7 +86,10 @@ public class PathController {
                 chassis.setDrivePower(0, 0, 0, dt);
                 currentMovement = null;
             }
-            else driveToPose(currentMovement.getTarget(pose));
+            else {
+                currentMovement = currentMovement.maybeReplan(pose);
+                driveToPose(currentMovement.getTarget(pose));
+            }
 
             return;
         }
@@ -95,7 +98,10 @@ public class PathController {
         updateMode(endPose);
 
         if (mode == Mode.PRECISION) drivePrecisionMode(endPose);
-        else driveToPose(currentMovement.getTarget(pose));
+        else {
+            currentMovement = currentMovement.maybeReplan(pose);
+            driveToPose(currentMovement.getTarget(pose));
+        }
     }
 
     private void updateMode(Pose endPose) {
@@ -217,7 +223,7 @@ public class PathController {
         return mode == Mode.PRECISION || currentMovement == null;
     }
 
-    /// @return whether the robot is currently following a movement
+    /// @return whether the robot is currently following a {@link Movement}
     public boolean isFollowing() {
         return currentMovement != null;
     }

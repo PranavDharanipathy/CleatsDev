@@ -49,6 +49,35 @@ public class HermiteSpline extends Curve {
         }
     }
 
+    /// Enables replanning for this spline. If the robot strays farther than
+    /// offShootDistance from the path, the spline is replanned from the robot's
+    /// current pose through the remaining waypoints and will end at the same
+    /// end pose.
+    public HermiteSpline setReplan(double offShootDistance) {
+        setReplanner(this::replanFrom, offShootDistance);
+        return this;
+    }
+
+    private HermiteSpline replanFrom(Pose currentPose) {
+
+        //replanning algorithm
+
+        double u = findBestParam(currentPose);
+
+        //first waypoint ahead of the current projection
+        int firstAhead = MathHelper.clamp((int) Math.floor(u) + 1, 1, numSegments);
+
+        final int aheadCount = numSegments - firstAhead + 1;
+
+        Pose[] newPoints = new Pose[1 + aheadCount];
+        newPoints[0] = currentPose;
+        for (int k = 0; k < aheadCount; k++) {
+            newPoints[1 + k] = points[firstAhead + k];
+        }
+
+        return new HermiteSpline(newPoints).setReplan(getReplanOffShootDistance());
+    }
+
     @Override
     protected Pose evaluate(double u) {
 

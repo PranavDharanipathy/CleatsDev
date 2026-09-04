@@ -12,6 +12,10 @@ public abstract class Curve extends Movement {
     private static final int REFINE_SAMPLES = 20;
     private static final double COMPLETION_PARAM_EPSILON = 0.02;
 
+    // info is cached to prevent the redundant recalculation
+    private boolean hasProjectionCache;
+    private double cacheX, cacheY, cacheParam, cacheDistance;
+
     /// @param u ranges from 0 to {@link #getMaxParam}
     /// @return the position and heading on the curve at parameter u
     protected abstract Pose evaluate(double u);
@@ -20,6 +24,8 @@ public abstract class Curve extends Movement {
     protected abstract double getMaxParam();
 
     protected double findBestParam(Pose currentPose) {
+
+        if (hasProjectionCache && cacheX == currentPose.x && cacheY == currentPose.y) return cacheParam;
 
         double maxParam = getMaxParam();
         int coarseSamples = Math.max(1, (int) Math.ceil(COARSE_SAMPLES_PER_UNIT * maxParam));
@@ -55,6 +61,12 @@ public abstract class Curve extends Movement {
             }
         }
 
+        hasProjectionCache = true;
+        cacheX = currentPose.x;
+        cacheY = currentPose.y;
+        cacheParam = bestU;
+        cacheDistance = bestDistance;
+
         return bestU;
     }
 
@@ -71,5 +83,11 @@ public abstract class Curve extends Movement {
     @Override
     public Pose getEndPose() {
         return evaluate(getMaxParam());
+    }
+
+    @Override
+    public double getPathError(Pose currentPose) {
+        findBestParam(currentPose);
+        return cacheDistance;
     }
 }
