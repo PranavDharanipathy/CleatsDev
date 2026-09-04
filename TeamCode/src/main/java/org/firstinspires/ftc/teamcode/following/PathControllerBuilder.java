@@ -23,7 +23,6 @@ public class PathControllerBuilder {
 
     private FinalLocalizerNKFConfig velocityXConfig, velocityYConfig, velocityHeadingConfig;
     private FinalLocalizerNKFConfig accelerationXConfig, accelerationYConfig, accelerationHeadingConfig;
-    private FinalLocalizerNKFConfig jerkXConfig, jerkYConfig, jerkHeadingConfig;
 
     private MotionConstraints motionConstraints;
 
@@ -76,21 +75,6 @@ public class PathControllerBuilder {
         return this;
     }
 
-    public PathControllerBuilder jerkXNKFParams(FinalLocalizerNKFConfig config) {
-        jerkXConfig = config;
-        return this;
-    }
-
-    public PathControllerBuilder jerkYNKFParams(FinalLocalizerNKFConfig config) {
-        jerkYConfig = config;
-        return this;
-    }
-
-    public PathControllerBuilder jerkHeadingNKFParams(FinalLocalizerNKFConfig config) {
-        jerkHeadingConfig = config;
-        return this;
-    }
-
     public PathControllerBuilder motionConstraints(MotionConstraints motionConstraints) {
         this.motionConstraints = motionConstraints;
         return this;
@@ -102,8 +86,7 @@ public class PathControllerBuilder {
 
         localizer.setNoiseFilterParameters(
             velocityXConfig.assemble(), velocityYConfig.assemble(), velocityHeadingConfig.assemble(),
-            accelerationXConfig.assemble(), accelerationYConfig.assemble(), accelerationHeadingConfig.assemble(),
-            jerkXConfig.assemble(), jerkYConfig.assemble(), jerkHeadingConfig.assemble()
+            accelerationXConfig.assemble(), accelerationYConfig.assemble(), accelerationHeadingConfig.assemble()
         );
 
         //TODO allat!!
