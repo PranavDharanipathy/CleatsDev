@@ -54,8 +54,7 @@ public class HeadingLQRTest extends LinearOpMode {
 
             //turn away
             Pose currentPose = pc.getFinalLocalizer().getPose();
-            Pose away = new Pose(currentPose.x, currentPose.y, awayHeading);
-            pc.follow(new HermiteSpline(currentPose, away)
+            pc.follow(new HermiteSpline(currentPose, new Pose(currentPose.x, currentPose.y, awayHeading))
                     .setHeadingOp(HeadingOp.linearHeading(currentPose.heading, awayHeading)), false);
 
             while (opModeIsActive() && pc.isFollowing()) {
@@ -63,7 +62,7 @@ public class HeadingLQRTest extends LinearOpMode {
                 if (gamepad1.a) stopRequested = true;
 
                 pc.update();
-                telemetry.addLine("turning away with transit mode");
+                telemetry.addLine("turning away");
                 telemetry.update();
             }
 

@@ -21,12 +21,14 @@ public class PathController {
         TRANSIT, PRECISION
     }
 
+    private static final double POSITION_HOLD_DEADBAND = 0.5;
+
     private final Chassis chassis;
     private final MotionConstraints motionConstraints;
     private final MecanumProfile mecanumProfile;
 
     private final FinalLocalizer localizer;
-    private Pose pose, velocity, acceleration, jerk;
+    private Pose pose, velocity, acceleration;
 
     private double dt;
 
@@ -87,7 +89,7 @@ public class PathController {
             }
             else {
                 currentMovement = currentMovement.maybeReplan(pose);
-                driveToPose(currentMovement.getTarget(pose));
+                driveAlong(currentMovement);
             }
 
             return;
@@ -99,7 +101,7 @@ public class PathController {
         if (mode == Mode.PRECISION) drivePrecisionMode(endPose);
         else {
             currentMovement = currentMovement.maybeReplan(pose);
-            driveToPose(currentMovement.getTarget(pose));
+            driveAlong(currentMovement);
         }
     }
 
@@ -131,27 +133,32 @@ public class PathController {
         }
     }
 
-    private void driveToPose(Pose target) {
+    private void driveAlong(Movement movement) {
 
-        double dx = target.x - pose.x;
-        double dy = target.y - pose.y;
-        double remainingDistance = Math.hypot(dx, dy);
+        Pose target = movement.getTarget(pose);
+        Pose direction = movement.getDriveDirection(pose);
+        double remainingDistance = movement.getRemainingDistance(pose);
 
-        double fieldAngle = FastMath.atan2(dy, dx);
-        double robotFrameAngle = MathHelper.normalizeAngleRad(fieldAngle - pose.heading);
+        double desiredForward = 0;
+        double desiredStrafe = 0;
 
-        double closingVelocity = velocity.x * Math.cos(fieldAngle) + velocity.y * Math.sin(fieldAngle);
+        if (remainingDistance >= POSITION_HOLD_DEADBAND && (direction.x != 0 || direction.y != 0)) {
 
-        double translationDecelMax = mecanumProfile.getMaxDeceleration(robotFrameAngle);
-        double translationStoppingDistance = closingVelocity > 0
-                ? (closingVelocity * closingVelocity) / (2d * translationDecelMax)
-                : 0;
+            double fieldAngle = FastMath.atan2(direction.y, direction.x);
+            double robotFrameAngle = MathHelper.normalizeAngleRad(fieldAngle - pose.heading);
 
-        boolean translationAccelerating = remainingDistance > translationStoppingDistance;
-        double translationSign = translationAccelerating ? 1 : -1;
+            double closingVelocity = velocity.x * direction.x + velocity.y * direction.y;
 
-        double desiredForward = translationSign * Math.cos(robotFrameAngle);
-        double desiredStrafe = -translationSign * Math.sin(robotFrameAngle);
+            double translationDecelMax = mecanumProfile.getMaxDeceleration(robotFrameAngle);
+            double translationStoppingDistance = closingVelocity > 0
+                    ? (closingVelocity * closingVelocity) / (2d * translationDecelMax)
+                    : 0;
+
+            double translationSign = remainingDistance > translationStoppingDistance ? 1 : -1;
+
+            desiredForward = translationSign * Math.cos(robotFrameAngle);
+            desiredStrafe = -translationSign * Math.sin(robotFrameAngle);
+        }
 
         double headingError = MathHelper.normalizeAngleRad(target.heading - pose.heading);
         double remainingHeading = Math.abs(headingError);

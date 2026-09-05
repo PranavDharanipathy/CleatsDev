@@ -313,9 +313,8 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
 
         Pose localStart = pc.getFinalLocalizer().getPose();
         double startHeading = localStart.heading;
-        Pose away = new Pose(localStart.x, localStart.y, startHeading + angle);
 
-        pc.follow(new HermiteSpline(localStart, away)
+        pc.follow(new HermiteSpline(localStart, new Pose(localStart.x, localStart.y, startHeading + angle))
                 .setHeadingOp(HeadingOp.linearHeading(startHeading, startHeading + angle)), false);
 
         while (opModeIsActive() && pc.isFollowing()) {

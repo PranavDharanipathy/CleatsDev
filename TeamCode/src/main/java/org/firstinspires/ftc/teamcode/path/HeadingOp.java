@@ -24,12 +24,14 @@ public interface HeadingOp {
     }
 
     static HeadingOp linearHeading(double startHeading, double endHeading) {
+
         double delta = MathHelper.normalizeAngleRad(endHeading - startHeading);
         return (progress, x, y, tangentAngle, reversed) ->
                 MathHelper.normalizeAngleRad(startHeading + delta * progress);
     }
 
     static HeadingOp linearHeadingReflex(double startHeading, double endHeading) {
+
         double delta = reflex(MathHelper.normalizeAngleRad(endHeading - startHeading));
         return (progress, x, y, tangentAngle, reversed) ->
                 MathHelper.normalizeAngleRad(startHeading + delta * progress);
@@ -40,10 +42,11 @@ public interface HeadingOp {
     }
 
     static HeadingOp exponentialHeading(double startHeading, double endHeading, double rate) {
+
         double delta = MathHelper.normalizeAngleRad(endHeading - startHeading);
-        double denom = 1 - Math.exp(-rate);
+
         return (progress, x, y, tangentAngle, reversed) -> {
-            double ease = (1 - Math.exp(-rate * progress)) / denom;
+            double ease = (1 - Math.exp(-rate * progress)) / (1 - Math.exp(-rate));
             return MathHelper.normalizeAngleRad(startHeading + delta * ease);
         };
     }
@@ -53,10 +56,11 @@ public interface HeadingOp {
     }
 
     static HeadingOp exponentialHeadingReflex(double startHeading, double endHeading, double rate) {
+
         double delta = reflex(MathHelper.normalizeAngleRad(endHeading - startHeading));
-        double denom = 1 - Math.exp(-rate);
+
         return (progress, x, y, tangentAngle, reversed) -> {
-            double ease = (1 - Math.exp(-rate * progress)) / denom;
+            double ease = (1 - Math.exp(-rate * progress)) / (1 - Math.exp(-rate));
             return MathHelper.normalizeAngleRad(startHeading + delta * ease);
         };
     }
