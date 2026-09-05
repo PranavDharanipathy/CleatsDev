@@ -30,11 +30,11 @@ public class Pose {
     }
 
     public Pose add(Pose pose) {
-        return new Pose(x + pose.x, y + pose.y, MathHelper.normalizeAngleRad(heading + pose.heading));
+        return new Pose(x + pose.x, y + pose.y, heading + pose.heading);
     }
 
     public Pose minus(Pose pose) {
-        return new Pose(x - pose.x, y - pose.y, MathHelper.normalizeAngleRad(heading - pose.heading));
+        return new Pose(x - pose.x, y - pose.y, heading - pose.heading);
     }
 
     public Pose divide(Pose pose) {
@@ -53,6 +53,10 @@ public class Pose {
         return new Pose(x * value, y * value, heading * value);
     }
 
+    public void normalizeHeading() {
+        heading = MathHelper.normalizeAngleRad(heading);
+    }
+
     // conversions
     public static Pose2D poseToPose2D(Pose pose) {
         return new Pose2D(INCH, pose.x, pose.y, RADIANS, pose.heading);
@@ -60,5 +64,9 @@ public class Pose {
 
     public static Pose pose2DToPose(Pose2D pose2D) {
         return new Pose(pose2D.getX(INCH), pose2D.getY(INCH), pose2D.getHeading(RADIANS));
+    }
+
+    public Pose copy() {
+        return new Pose(x, y, heading);
     }
 }
