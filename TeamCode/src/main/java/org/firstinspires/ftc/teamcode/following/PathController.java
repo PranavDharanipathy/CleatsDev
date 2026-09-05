@@ -244,11 +244,11 @@ public class PathController {
     }
 
     public Pose getVelocity() {
-        return pose;
+        return velocity;
     }
 
     public Pose getAcceleration() {
-        return pose;
+        return acceleration;
     }
 
 }

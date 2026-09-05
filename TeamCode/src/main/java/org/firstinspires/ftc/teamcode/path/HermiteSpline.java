@@ -49,13 +49,13 @@ public class HermiteSpline extends Curve {
         }
     }
 
-    /// Faces the opposite direction while following.
+    /// Faces the opposite direction while following
     public HermiteSpline setReversed(boolean reversed) {
         this.reversed = reversed;
         return this;
     }
 
-    /// Sets how the robot's heading should be handled for the path.
+    /// Sets how heading will be handles (defaults to tangential heading).
     public HermiteSpline setHeadingOp(HeadingOp headingOp) {
         this.headingOp = headingOp;
         return this;
@@ -75,7 +75,7 @@ public class HermiteSpline extends Curve {
         int aheadCount = numSegments - firstAhead + 1;
 
         Pose[] newPoints = new Pose[1 + aheadCount];
-        newPoints[0] = currentPose;
+        newPoints[0] = new Pose(currentPose.x, currentPose.y, currentPose.heading);
         for (int i = 0; i < aheadCount; i++) {
             newPoints[1 + i] = points[firstAhead + i];
         }

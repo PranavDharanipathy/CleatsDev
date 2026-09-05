@@ -29,13 +29,13 @@ public class Chassis {
         rb.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    /// Sets wheel powers with anti-slip compensation
+    /// Sets wheel powers with anti-slip compensation.
     public void setDrivePower(double forward, double strafe, double turn, double dt) {
 
-        double lfPower = forward + strafe + turn;
-        double rfPower = forward - strafe - turn;
-        double lbPower = forward - strafe + turn;
-        double rbPower = forward + strafe - turn;
+        double lfPower = forward + strafe - turn;
+        double rfPower = forward - strafe + turn;
+        double lbPower = forward - strafe - turn;
+        double rbPower = forward + strafe + turn;
 
         double maxMagnitude = Math.max(Math.max(Math.abs(lfPower), Math.abs(rfPower)), Math.max(Math.abs(lbPower), Math.abs(rbPower)));
         double scale = maxMagnitude > 1d ? 1d / maxMagnitude : 1d;
@@ -46,13 +46,13 @@ public class Chassis {
         rb.setPower(rbPower * scale, dt);
     }
 
-    /// Sets wheel powers without anti-slip compensation
+    /// Sets wheel powers without anti-slip compensation.
     public void setDrivePowerBypassRamp(double forward, double strafe, double turn) {
 
-        double lfPower = forward + strafe + turn;
-        double rfPower = forward - strafe - turn;
-        double lbPower = forward - strafe + turn;
-        double rbPower = forward + strafe - turn;
+        double lfPower = forward + strafe - turn;
+        double rfPower = forward - strafe + turn;
+        double lbPower = forward - strafe - turn;
+        double rbPower = forward + strafe + turn;
 
         double maxMagnitude = Math.max(Math.max(Math.abs(lfPower), Math.abs(rfPower)), Math.max(Math.abs(lbPower), Math.abs(rbPower)));
         double scale = maxMagnitude > 1d ? 1d / maxMagnitude : 1d;
