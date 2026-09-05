@@ -116,7 +116,7 @@ public class HeadingLQRTest extends LinearOpMode {
                 if (absError < ALREADY_CLOSE_THRESHOLD_HEADING || timedOut) break;
             }
 
-            pc.getChassis().setDrivePower(0, 0, 0, pc.getFinalLocalizer().getDeltaTime());
+            pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
             if (stopRequested) break;
         }

@@ -135,7 +135,7 @@ public class TranslationLQRTest extends LinearOpMode {
                 if (distance < ALREADY_CLOSE_THRESHOLD_POSITION || timedOut) break;
             }
 
-            pc.getChassis().setDrivePower(0, 0, 0, pc.getFinalLocalizer().getDeltaTime());
+            pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
             if (stopRequested) break;
         }
