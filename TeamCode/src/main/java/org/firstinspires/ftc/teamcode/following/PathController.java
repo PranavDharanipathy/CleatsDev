@@ -42,6 +42,11 @@ public class PathController {
     private double previousTargetHeading;
     private boolean hasPreviousTargetHeading;
 
+    //distance covered on movements a replan already replaced, so progress carries over
+    private double bankedDistance;
+    private double currentMovementLength;
+    private boolean hasMeasuredPathLength;
+
     public PathController(Chassis chassis, FinalLocalizer localizer, MotionConstraints motionConstraints, PoseLQRController poseLQR, PrecisionModeThresholds precisionModeThresholds) {
 
         this.chassis = chassis;
@@ -74,6 +79,10 @@ public class PathController {
         headingMode = Mode.TRANSIT;
 
         hasPreviousTargetHeading = false;
+
+        bankedDistance = 0;
+        currentMovementLength = 0;
+        hasMeasuredPathLength = false;
     }
 
     /// Must be called every loop.
@@ -89,15 +98,32 @@ public class PathController {
 
         if (currentMovement == null) return;
 
+        //the pose isn't known until the first update, so the path can only be measured here
+        if (!hasMeasuredPathLength) {
+
+            currentMovementLength = currentMovement.getRemainingDistance(pose);
+            hasMeasuredPathLength = true;
+        }
+
         if (currentMovement.isComplete(pose)) {
 
             chassis.setDrivePower(0, 0, 0, dt);
+
+            bankedDistance += currentMovementLength;
+            currentMovementLength = 0;
             currentMovement = null;
 
             return;
         }
 
+        Movement previousMovement = currentMovement;
         currentMovement = currentMovement.maybeReplan(pose);
+
+        if (currentMovement != previousMovement) {
+
+            bankedDistance += Math.max(0, currentMovementLength - previousMovement.getRemainingDistance(pose));
+            currentMovementLength = currentMovement.getRemainingDistance(pose);
+        }
 
         drive(currentMovement, currentMovement.getTarget(pose), currentMovement.getEndPose());
     }
@@ -262,6 +288,34 @@ public class PathController {
                 : 0;
 
         return remaining > stoppingDistance ? 1 : -1;
+    }
+
+    /// @return inches left to the end pose along the path itself, curves included
+    public double getRemainingDistance() {
+
+        if (currentMovement == null || pose == null) return 0;
+
+        return currentMovement.getRemainingDistance(pose);
+    }
+
+    /// @return inches covered along the path so far, carried over through replans
+    public double getTravelledDistance() {
+        return Math.max(0, bankedDistance + currentMovementLength - getRemainingDistance());
+    }
+
+    /// @return the path's full arc length, growing only if a replan routes further
+    public double getPathLength() {
+        return bankedDistance + currentMovementLength;
+    }
+
+    /// @return how much of the path is done, 0 to 1. (irrelevant to heading)
+    public double getPathPercent() {
+
+        double pathLength = getPathLength();
+
+        if (pathLength <= 0) return hasMeasuredPathLength ? 1 : 0;
+
+        return MathHelper.clamp(getTravelledDistance() / pathLength, 0, 1);
     }
 
     public Chassis getChassis() {
