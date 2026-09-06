@@ -65,7 +65,7 @@ public class Encoder {
 
         this.direction = direction;
 
-        currentPositionTicks = motor.getCurrentPosition();
+        currentPositionTicks = motor.getCurrentPosition() * direction.getMultiplier();
         lastPositionTicks = currentPositionTicks;
     }
 

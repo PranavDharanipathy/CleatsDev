@@ -103,7 +103,6 @@ public class PathControllerBuilder {
             accelerationXConfig.assemble(), accelerationYConfig.assemble(), accelerationHeadingConfig.assemble()
         );
 
-        //TODO allat!!
         return new PathController(
                 new Chassis(
                         hardwareMap,
