@@ -26,6 +26,7 @@ public class Encoder {
 
     private int currentPositionTicks;
     private int lastPositionTicks;
+    private int startTicks;
 
     private double positionInches;
     private double deltaInches;
@@ -38,6 +39,7 @@ public class Encoder {
 
         currentPositionTicks = motor.getCurrentPosition();
         lastPositionTicks = currentPositionTicks;
+        startTicks = currentPositionTicks;
     }
 
     public void update() {
@@ -47,7 +49,7 @@ public class Encoder {
         int deltaTicks = currentPositionTicks - lastPositionTicks;
 
         deltaInches = deltaTicks * inchesPerTick;
-        positionInches = currentPositionTicks * inchesPerTick;
+        positionInches = (currentPositionTicks - startTicks) * inchesPerTick;
 
         lastPositionTicks = currentPositionTicks;
     }
@@ -56,6 +58,7 @@ public class Encoder {
 
         currentPositionTicks = motor.getCurrentPosition() * direction.getMultiplier();
         lastPositionTicks = currentPositionTicks;
+        startTicks = currentPositionTicks;
 
         positionInches = 0;
         deltaInches = 0;
@@ -67,6 +70,7 @@ public class Encoder {
 
         currentPositionTicks = motor.getCurrentPosition() * direction.getMultiplier();
         lastPositionTicks = currentPositionTicks;
+        startTicks = currentPositionTicks;
     }
 
     public Direction getDirection() {
