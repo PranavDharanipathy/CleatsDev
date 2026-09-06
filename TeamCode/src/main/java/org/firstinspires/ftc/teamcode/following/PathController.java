@@ -8,6 +8,7 @@ import org.firstinspires.ftc.teamcode.following.chassis.MotionConstraints;
 import org.firstinspires.ftc.teamcode.localization.FinalLocalizer;
 import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
+import org.firstinspires.ftc.teamcode.path.Maneuver;
 import org.firstinspires.ftc.teamcode.path.Movement;
 
 public class PathController {
@@ -33,19 +34,15 @@ public class PathController {
     private final PoseLQRController poseLQR;
     private final PrecisionModeThresholds precisionModeThresholds;
 
-    private Movement currentMovement;
+    private Maneuver currentManeuver;
     private boolean precisionStopEnabled;
+    private Movement drivenMovement;
 
     //translation and heading have independent LQR management
     private Mode translationMode, headingMode;
 
     private double previousTargetHeading;
     private boolean hasPreviousTargetHeading;
-
-    //distance covered on movements a replan already replaced, so progress carries over
-    private double bankedDistance;
-    private double currentMovementLength;
-    private boolean hasMeasuredPathLength;
 
     public PathController(Chassis chassis, FinalLocalizer localizer, MotionConstraints motionConstraints, PoseLQRController poseLQR, PrecisionModeThresholds precisionModeThresholds) {
 
@@ -71,18 +68,43 @@ public class PathController {
     /// Call once to start following a path.
     /// @param precisionStop whether to use precision mode for end pose correction or not
     public void follow(Movement movement, boolean precisionStop) {
+        follow(new Maneuver().addMovement(movement, null, precisionStop), precisionStop);
+    }
 
-        currentMovement = movement;
+    /// Call once to start following a series of movements.
+    public void follow(Maneuver maneuver) {
+        follow(maneuver, true);
+    }
+
+    /// Call once to start following a series of movements.
+    /// @param precisionStop turns precision mode off for the whole maneuver
+    public void follow(Maneuver maneuver, boolean precisionStop) {
+
+        currentManeuver = maneuver;
+        currentManeuver.reset();
+
         precisionStopEnabled = precisionStop;
 
         translationMode = Mode.TRANSIT;
         headingMode = Mode.TRANSIT;
 
+        drivenMovement = null;
         hasPreviousTargetHeading = false;
+    }
 
-        bankedDistance = 0;
-        currentMovementLength = 0;
-        hasMeasuredPathLength = false;
+    /// Cancels the whole maneuver and stops the drivetrain. Statistics such
+    /// as traveled distance, remaining distance, and maneuver percent stay
+    /// what they were until a new {@link Maneuver} is followed.
+    public void cancel() {
+
+        if (currentManeuver == null) return;
+
+        currentManeuver.cancel();
+
+        translationMode = Mode.TRANSIT;
+        headingMode = Mode.TRANSIT;
+
+        chassis.setDrivePowerBypassRamp(0, 0, 0);
     }
 
     /// Must be called every loop.
@@ -96,43 +118,33 @@ public class PathController {
         velocity = localizer.getVelocity();
         acceleration = localizer.getAcceleration();
 
-        if (currentMovement == null) return;
+        if (currentManeuver == null || !currentManeuver.isFollowing()) return;
 
-        //the pose isn't known until the first update, so the path can only be measured here
-        if (!hasMeasuredPathLength) {
+        Movement movement = currentManeuver.update(pose, precisionModeThresholds.getEntryPositionDistance(), dt);
 
-            currentMovementLength = currentMovement.getRemainingDistance(pose);
-            hasMeasuredPathLength = true;
-        }
+        if (movement == null) {
 
-        if (currentMovement.isComplete(pose)) {
-
-            chassis.setDrivePower(0, 0, 0, dt);
-
-            bankedDistance += currentMovementLength;
-            currentMovementLength = 0;
-            currentMovement = null;
-
+            chassis.setDrivePowerBypassRamp(0, 0, 0);
             return;
         }
 
-        Movement previousMovement = currentMovement;
-        currentMovement = currentMovement.maybeReplan(pose);
+        //a new movement means a new heading target, so the feedforward can't carry over
+        if (movement != drivenMovement) {
 
-        if (currentMovement != previousMovement) {
-
-            bankedDistance += Math.max(0, currentMovementLength - previousMovement.getRemainingDistance(pose));
-            currentMovementLength = currentMovement.getRemainingDistance(pose);
+            drivenMovement = movement;
+            hasPreviousTargetHeading = false;
         }
 
-        drive(currentMovement, currentMovement.getTarget(pose), currentMovement.getEndPose());
+        boolean precisionStop = precisionStopEnabled && currentManeuver.isPrecisionAllowed();
+
+        drive(movement, movement.getTarget(pose), movement.getEndPose(), precisionStop);
     }
 
-    private void drive(Movement movement, Pose target, Pose endPose) {
+    private void drive(Movement movement, Pose target, Pose endPose, boolean precisionStop) {
 
         double lqrForward = 0, lqrStrafe = 0, lqrTurn = 0;
 
-        if (precisionStopEnabled) {
+        if (precisionStop) {
 
             //target moves along the path, so LQR uses the rate of error instead of plain angular velocity
             double targetHeadingRate = 0;
@@ -163,6 +175,13 @@ public class PathController {
             boolean headingAuthority = Math.abs(lqrTurn) < 1;
 
             updateModes(target, endPose, translationAuthority, headingAuthority, relativeAngularVelocity);
+        }
+        else {
+
+            hasPreviousTargetHeading = false;
+
+            translationMode = Mode.TRANSIT;
+            headingMode = Mode.TRANSIT;
         }
 
         double desiredForward, desiredStrafe;
@@ -278,7 +297,7 @@ public class PathController {
         }
     }
 
-    //1 while there is room to keep speeding up, -1 once only enough room is left to stop
+    //1 when there's room to keep speeding up, -1 once there's enough room left to stop
     private double shouldAccelerateOrBrake(double remaining, double closingVelocity, double axisX, double axisY) {
 
         double robotFrameAngle = MathHelper.normalizeAngleRad(FastMath.atan2(axisY, axisX) - pose.heading);
@@ -290,32 +309,36 @@ public class PathController {
         return remaining > stoppingDistance ? 1 : -1;
     }
 
-    /// @return inches left to the end pose along the path itself, curves included
+    /// @return inches left in the whole maneuver, along the paths themselves
     public double getRemainingDistance() {
-
-        if (currentMovement == null || pose == null) return 0;
-
-        return currentMovement.getRemainingDistance(pose);
+        return currentManeuver == null ? 0 : currentManeuver.getRemainingDistance();
     }
 
-    /// @return inches covered along the path so far, carried over through replans
+    /// @return inches covered across the whole maneuver, carried over through replans
     public double getTravelledDistance() {
-        return Math.max(0, bankedDistance + currentMovementLength - getRemainingDistance());
+        return currentManeuver == null ? 0 : currentManeuver.getTravelledDistance();
     }
 
-    /// @return the path's full arc length, growing only if a replan routes further
+    /// @return the whole maneuver's arc length, only growing if a replan routes further
     public double getPathLength() {
-        return bankedDistance + currentMovementLength;
+        return currentManeuver == null ? 0 : currentManeuver.getLength();
     }
 
-    /// @return how much of the path is done, 0 to 1. (irrelevant to heading)
+    /// @return how much of the maneuver is done, 0 to 1
     public double getPathPercent() {
+        return currentManeuver == null ? 0 : currentManeuver.getPercent();
+    }
 
-        double pathLength = getPathLength();
+    public Maneuver getCurrentManeuver() {
+        return currentManeuver;
+    }
 
-        if (pathLength <= 0) return hasMeasuredPathLength ? 1 : 0;
+    public Movement getCurrentMovement() {
+        return currentManeuver == null ? null : currentManeuver.getCurrentMovement();
+    }
 
-        return MathHelper.clamp(getTravelledDistance() / pathLength, 0, 1);
+    public boolean isWaiting() {
+        return currentManeuver != null && currentManeuver.isWaiting();
     }
 
     public Chassis getChassis() {
@@ -360,15 +383,14 @@ public class PathController {
         return headingMode;
     }
 
-    /// @return if the robot isn't following a path or if precision mode has
-    /// taken over
+    /// @return if the maneuver isn't running or if precision mode has taken over
     public boolean hasSettled() {
-        return isOnPrecisionMode() || currentMovement == null;
+        return !isFollowing() || isOnPrecisionMode();
     }
 
-    /// @return whether the robot is currently following a {@link Movement}
+    /// @return whether a maneuver is currently being followed
     public boolean isFollowing() {
-        return currentMovement != null;
+        return currentManeuver != null && currentManeuver.isFollowing();
     }
 
     public double getX() {

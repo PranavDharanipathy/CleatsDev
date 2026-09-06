@@ -10,6 +10,9 @@ public abstract class Movement {
 
     public abstract Pose getEndPose();
 
+    /// Clears any state latched while following, so the movement can be followed again.
+    public void reset() {}
+
     private Replanner replanner;
     private double replanOffShootDistance;
 

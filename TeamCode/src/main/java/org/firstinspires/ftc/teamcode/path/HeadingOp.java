@@ -87,8 +87,8 @@ public interface HeadingOp {
 
     static double reflex(double shortDelta) { //follows the reflex angle
 
-        if (shortDelta > 0) return shortDelta - 2 * Math.PI;
-        if (shortDelta < 0) return shortDelta + 2 * Math.PI;
-        return 2 * Math.PI;
+        if (shortDelta > 0) return shortDelta - 2d * Math.PI;
+        if (shortDelta < 0) return shortDelta + 2d * Math.PI;
+        return 2d * Math.PI;
     }
 }
