@@ -24,15 +24,15 @@ public class ThreeDeadWheelLocalizer extends Localizer {
 
         leftEncoder = new Encoder(
                 hardwareMap.get(DcMotorEx.class, attributes.getLeftEncoderName()),
-                attributes.getOdometryPodData()
+                attributes.getOdometerData()
         );
         rightEncoder = new Encoder(
                 hardwareMap.get(DcMotorEx.class, attributes.getRightEncoderName()),
-                attributes.getOdometryPodData()
+                attributes.getOdometerData()
         );
         strafeEncoder = new Encoder(
                 hardwareMap.get(DcMotorEx.class, attributes.getStrafeEncoderName()),
-                attributes.getOdometryPodData()
+                attributes.getOdometerData()
         );
 
         leftEncoder.setDirection(attributes.getLeftDirection());
@@ -77,6 +77,7 @@ public class ThreeDeadWheelLocalizer extends Localizer {
         Pose globalDelta = MathHelper.exponentialIntegrate(robotDeltas, pose.heading);
 
         pose = pose.add(globalDelta);
+        pose.normalizeHeading();
 
         prevTime = currTime;
         currTime = System.nanoTime() * 1e-9;

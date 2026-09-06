@@ -19,7 +19,7 @@ public class HeadingTest extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        pc = Constants.getPathController();
+        pc = Constants.getPathController(hardwareMap);
 
         telemetry.addLine("Press A to begin braking.");
         telemetry.addLine("The robot will spin clockwise. Let the robot reach full speed before braking.");

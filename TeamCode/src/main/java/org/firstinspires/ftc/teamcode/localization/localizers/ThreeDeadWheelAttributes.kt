@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode.localization.localizers
 
 import org.firstinspires.ftc.teamcode.localization.Encoder
-import org.firstinspires.ftc.teamcode.localization.OdometryPod
+import org.firstinspires.ftc.teamcode.localization.Odometer
 
 data class ThreeDeadWheelAttributes(
 
@@ -17,5 +17,5 @@ data class ThreeDeadWheelAttributes(
     val rightDirection: Encoder.Direction,
     val strafeDirection: Encoder.Direction,
 
-    val odometryPodData: OdometryPod
+    val odometerData: Odometer
 )

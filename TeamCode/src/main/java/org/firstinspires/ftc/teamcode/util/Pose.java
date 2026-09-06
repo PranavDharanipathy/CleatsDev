@@ -29,6 +29,11 @@ public class Pose {
         this (x, y, 0);
     }
 
+    /// Pose where x, y, and heading are 0
+    public Pose() {
+        this (0, 0, 0);
+    }
+
     public Pose add(Pose pose) {
         return new Pose(x + pose.x, y + pose.y, heading + pose.heading);
     }

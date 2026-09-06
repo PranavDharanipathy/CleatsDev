@@ -31,26 +31,26 @@ public class DriveEncoderIMULocalizer extends Localizer {
     public DriveEncoderIMULocalizer(HardwareMap hardwareMap, DriveEncoderIMUAttributes attributes) {
 
         frontLeft = new Encoder(
-                hardwareMap.get(DcMotorEx.class, attributes.getFrontLeftName()),
-                attributes.getOdometryData()
+                hardwareMap.get(DcMotorEx.class, attributes.getLeftFrontName()),
+                attributes.getOdometerData()
         );
         frontRight = new Encoder(
-                hardwareMap.get(DcMotorEx.class, attributes.getFrontRightName()),
-                attributes.getOdometryData()
+                hardwareMap.get(DcMotorEx.class, attributes.getRightFrontName()),
+                attributes.getOdometerData()
         );
         backLeft = new Encoder(
-                hardwareMap.get(DcMotorEx.class, attributes.getBackLeftName()),
-                attributes.getOdometryData()
+                hardwareMap.get(DcMotorEx.class, attributes.getLeftBackName()),
+                attributes.getOdometerData()
         );
         backRight = new Encoder(
-                hardwareMap.get(DcMotorEx.class, attributes.getBackRightName()),
-                attributes.getOdometryData()
+                hardwareMap.get(DcMotorEx.class, attributes.getRightBackName()),
+                attributes.getOdometerData()
         );
 
-        frontLeft.setDirection(attributes.getFrontLeftDirection());
-        frontRight.setDirection(attributes.getFrontRightDirection());
-        backLeft.setDirection(attributes.getBackLeftDirection());
-        backRight.setDirection(attributes.getBackRightDirection());
+        frontLeft.setDirection(attributes.getLeftFrontDirection());
+        frontRight.setDirection(attributes.getRightFrontDirection());
+        backLeft.setDirection(attributes.getLeftBackDirection());
+        backRight.setDirection(attributes.getRightBackDirection());
 
         chassisWidth = attributes.getChassisWidth();
         chassisLength = attributes.getChassisLength();

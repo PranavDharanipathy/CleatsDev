@@ -129,6 +129,33 @@ public class HermiteSpline extends Curve {
     }
 
     @Override
+    protected Pose derivative(double u) {
+
+        double clampedU = MathHelper.clamp(u, 0, numSegments);
+        int segment = Math.min((int) clampedU, numSegments - 1);
+        double t = clampedU - segment;
+
+        Pose p0 = points[segment];
+        Pose p1 = points[segment + 1];
+
+        double t2 = t * t;
+        double t3 = t2 * t;
+        double t4 = t3 * t;
+
+        double d00 /*d0*/ = -30d * t4 + 60d * t3 - 30d * t2;
+        double d10 /*d1*/ = -15d * t4 + 32d * t3 - 18d * t2 + 1d;
+        double d20 /*d2*/ = -2.5d * t4 + 6d * t3 - 4.5d * t2 + t;
+        double d01 /*d3*/ = 30d * t4 - 60d * t3 + 30d * t2;
+        double d11 /*d4*/ = -15d * t4 + 28d * t3 - 12d * t2;
+        double d21 /*d5*/ = 2.5d * t4 - 4d * t3 + 1.5d * t2;
+
+        double x = d00 * p0.x + d10 * tangentX[segment] + d20 * accelX[segment] + d01 * p1.x + d11 * tangentX[segment + 1] + d21 * accelX[segment + 1];
+        double y = d00 * p0.y + d10 * tangentY[segment] + d20 * accelY[segment] + d01 * p1.y + d11 * tangentY[segment + 1] + d21 * accelY[segment + 1];
+
+        return new Pose(x, y, 0);
+    }
+
+    @Override
     protected double getMaxParam() {
         return numSegments;
     }

@@ -18,7 +18,7 @@ public class FinalLocalizerTuner extends OpMode {
 
     public static int STAGE = 1;
 
-    public static double Q, R, OUTLIER_THRESHOLD_MULTIPLIER;
+    public static double Q = 1, R = 1, OUTLIER_THRESHOLD_MULTIPLIER = 1;
 
     private Chassis chassis;
     private FinalLocalizer finalLocalizer;
@@ -30,13 +30,13 @@ public class FinalLocalizerTuner extends OpMode {
 
         telemetry = new MultipleTelemetry(super.telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        PathController pc = Constants.getPathController();
+        PathController pc = Constants.getPathController(hardwareMap);
 
         chassis = pc.getChassis();
         finalLocalizer = new FinalLocalizer(pc.getFinalLocalizer().getLocalizer()); //custom copy with same localizer
 
         //default values
-        double[] defaultParams = {1, 1, 1}; // {q, r, outlierThresholdMultiplier}
+        double[] defaultParams = {Q, R, OUTLIER_THRESHOLD_MULTIPLIER};
         finalLocalizer.setNoiseFilterParameters(
                 defaultParams, defaultParams, defaultParams,
                 defaultParams, defaultParams, defaultParams
@@ -62,8 +62,8 @@ public class FinalLocalizerTuner extends OpMode {
     @Override
     public void loop() {
 
-        chassis.setDrivePowerBypassRamp(
-                -gamepad1.left_stick_y,
+        chassis.driveFromJoystick(
+                gamepad1.left_stick_y,
                 gamepad1.left_stick_x,
                 gamepad1.right_stick_x
         );

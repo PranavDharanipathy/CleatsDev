@@ -2,24 +2,24 @@ package org.firstinspires.ftc.teamcode.localization.localizers
 
 import com.qualcomm.robotcore.hardware.IMU
 import org.firstinspires.ftc.teamcode.localization.Encoder
-import org.firstinspires.ftc.teamcode.localization.OdometryPod
+import org.firstinspires.ftc.teamcode.localization.Odometer
 
 data class DriveEncoderIMUAttributes(
-    
-    val frontLeftName: String,
-    val frontRightName: String,
-    val backLeftName: String,
-    val backRightName: String,
+
+    val leftFrontName: String,
+    val rightFrontName: String,
+    val leftBackName: String,
+    val rightBackName: String,
     val imuName: String,
 
-    val frontLeftDirection: Encoder.Direction,
-    val frontRightDirection: Encoder.Direction,
-    val backLeftDirection: Encoder.Direction,
-    val backRightDirection: Encoder.Direction,
+    val leftFrontDirection: Encoder.Direction,
+    val rightFrontDirection: Encoder.Direction,
+    val leftBackDirection: Encoder.Direction,
+    val rightBackDirection: Encoder.Direction,
 
     val chassisWidth: Double,
     val chassisLength: Double,
 
-    val odometryData: OdometryPod,
+    val odometerData: Odometer,
     val imuParameters: IMU.Parameters
 )

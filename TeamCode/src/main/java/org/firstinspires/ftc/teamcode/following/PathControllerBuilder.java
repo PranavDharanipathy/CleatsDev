@@ -26,6 +26,10 @@ public class PathControllerBuilder {
 
     private MotionConstraints motionConstraints;
 
+    private Lazy<PoseLQRController> poseLQRController;
+
+    private PrecisionModeThresholds precisionModeThresholds;
+
     public PathControllerBuilder(HardwareMap hardwareMap) {
         this.hardwareMap = hardwareMap;
     }
@@ -80,6 +84,16 @@ public class PathControllerBuilder {
         return this;
     }
 
+    public PathControllerBuilder poseLQRController(Supplier<PoseLQRController> poseLQRController) {
+        this.poseLQRController = new Lazy<>(poseLQRController);
+        return this;
+    }
+
+    public PathControllerBuilder precisionModeThresholds(PrecisionModeThresholds precisionModeThresholds) {
+        this.precisionModeThresholds = precisionModeThresholds;
+        return this;
+    }
+
     public PathController build() {
 
         FinalLocalizer localizer = new FinalLocalizer(this.localizer.get());
@@ -98,7 +112,9 @@ public class PathControllerBuilder {
                         motionConstraints.getAntiSlipRampRate()
                 ),
                 localizer,
-                motionConstraints
+                motionConstraints,
+                poseLQRController.get(),
+                precisionModeThresholds
         );
     }
 

@@ -17,7 +17,7 @@ public abstract class Movement {
     /// determined by {@link #getPathError} exceeds offShootDistance, the
     /// movement is replanned.
     public Movement setReplanner(Replanner replanner, double offShootDistance) {
-        
+
         this.replanner = replanner;
         this.replanOffShootDistance = offShootDistance;
 
@@ -32,12 +32,10 @@ public abstract class Movement {
         return replanner != null;
     }
 
-    /// Field frame unit vector the robot should translate along, with the heading
-    /// parameter ignored. Defaults to pointing straight at the target.
-    public Pose getDriveDirection(Pose currentPose) {
-
-        Pose target = getTarget(currentPose);
-        return toUnitVector(target.x - currentPose.x, target.y - currentPose.y);
+    /// Distance from the robot to the path, leftward from tangent is positive
+    /// and rightward is negative. Default is 0 meaning it's "never off path".
+    public double getSignedCrossTrack(Pose currentPose) {
+        return 0;
     }
 
     /// Distance left to travel, used to decide when to start braking.
@@ -45,6 +43,12 @@ public abstract class Movement {
 
         Pose end = getEndPose();
         return Math.hypot(end.x - currentPose.x, end.y - currentPose.y);
+    }
+
+    public Pose getTangentDirection(Pose currentPose) {
+
+        Pose target = getTarget(currentPose);
+        return toUnitVector(target.x - currentPose.x, target.y - currentPose.y);
     }
 
     protected static Pose toUnitVector(double x, double y) {

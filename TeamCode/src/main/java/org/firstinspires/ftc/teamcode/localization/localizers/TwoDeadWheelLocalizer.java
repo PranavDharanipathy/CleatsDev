@@ -27,11 +27,11 @@ public class TwoDeadWheelLocalizer extends Localizer {
 
         forwardEncoder = new Encoder(
                 hardwareMap.get(DcMotorEx.class, attributes.getForwardEncoderName()),
-                attributes.getOdometryPodData()
+                attributes.getOdometerData()
         );
         strafeEncoder = new Encoder(
                 hardwareMap.get(DcMotorEx.class, attributes.getStrafeEncoderName()),
-                attributes.getOdometryPodData()
+                attributes.getOdometerData()
         );
 
         forwardEncoder.setDirection(attributes.getForwardDirection());
@@ -76,6 +76,7 @@ public class TwoDeadWheelLocalizer extends Localizer {
         Pose globalDelta = MathHelper.exponentialIntegrate(robotDeltas, pose.heading);
 
         pose = pose.add(globalDelta);
+        pose.normalizeHeading();
 
         prevTime = currTime;
         currTime = System.nanoTime() * 1e-9;

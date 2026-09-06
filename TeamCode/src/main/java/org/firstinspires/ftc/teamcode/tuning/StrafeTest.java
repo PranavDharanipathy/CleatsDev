@@ -19,7 +19,7 @@ public class StrafeTest extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        pc = Constants.getPathController();
+        pc = Constants.getPathController(hardwareMap);
 
         telemetry.addLine("Press A to begin braking.");
         telemetry.addLine("The robot will strafe right. Let the robot cruise for as long as possible before braking.");

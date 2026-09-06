@@ -51,7 +51,7 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        pc = Constants.getPathController();
+        pc = Constants.getPathController(hardwareMap);
 
         telemetry.addLine("Give it space (it will move diagonally forward-right and later also turn).");
         telemetry.addLine("Press B at any time to manually drive and reposition the robot, press B again to resume the search.");
@@ -125,13 +125,12 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
         while (opModeIsActive()) {
 
             pc.update();
-            double dt = pc.getFinalLocalizer().getDeltaTime();
 
-            double forward = -gamepad1.left_stick_y;
-            double strafe = gamepad1.left_stick_x;
-            double turn = gamepad1.right_stick_x;
-
-            pc.getChassis().setDrivePower(forward, strafe, turn, dt);
+            pc.getChassis().driveFromJoystick(
+                    gamepad1.left_stick_y,
+                    gamepad1.left_stick_x,
+                    gamepad1.right_stick_x
+            );
 
             telemetry.addLine("MANUAL DRIVING, press B to resume search");
             telemetry.update();

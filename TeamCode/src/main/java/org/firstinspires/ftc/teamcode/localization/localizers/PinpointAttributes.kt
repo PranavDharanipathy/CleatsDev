@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode.localization.localizers
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver
-import org.firstinspires.ftc.teamcode.localization.OdometryPod
+import org.firstinspires.ftc.teamcode.localization.Odometer
 
 data class PinpointAttributes(
 
@@ -13,5 +13,5 @@ data class PinpointAttributes(
     val forwardPodDirection: GoBildaPinpointDriver.EncoderDirection,
     val strafePodDirection: GoBildaPinpointDriver.EncoderDirection,
 
-    val odometryPodData: OdometryPod
+    val odometerData: Odometer
 )

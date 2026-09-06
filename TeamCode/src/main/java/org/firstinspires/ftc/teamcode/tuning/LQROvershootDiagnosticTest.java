@@ -31,7 +31,7 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        pc = Constants.getPathController();
+        pc = Constants.getPathController(hardwareMap);
 
         telemetry = new MultipleTelemetry(super.telemetry, FtcDashboard.getInstance().getTelemetry());
 

@@ -63,6 +63,14 @@ public class Chassis {
         rb.setPowerBypassRamp(rbPower * scale);
     }
 
+    public void driveFromJoystickWithRamp(double forward, double strafe, double turn, double dt) {
+        setDrivePower(-forward, strafe, -turn, dt);
+    }
+
+    public void driveFromJoystick(double forward, double strafe, double turn) {
+        setDrivePowerBypassRamp(-forward, strafe, -turn);
+    }
+
     public double getLFPower() { return lf.getPower(); }
 
     public double getRFPower() { return rf.getPower(); }

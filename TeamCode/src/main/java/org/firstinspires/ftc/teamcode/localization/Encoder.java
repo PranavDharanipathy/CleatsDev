@@ -30,11 +30,11 @@ public class Encoder {
     private double positionInches;
     private double deltaInches;
 
-    public Encoder(DcMotorEx motor, OdometryPod odometryPod) {
+    public Encoder(DcMotorEx motor, Odometer odometer) {
 
         this.motor = motor;
 
-        this.inchesPerTick = odometryPod.getInchesPerTick();
+        this.inchesPerTick = odometer.getInchesPerTick();
 
         currentPositionTicks = motor.getCurrentPosition();
         lastPositionTicks = currentPositionTicks;
@@ -62,7 +62,11 @@ public class Encoder {
     }
 
     public void setDirection(Direction direction) {
+
         this.direction = direction;
+
+        currentPositionTicks = motor.getCurrentPosition();
+        lastPositionTicks = currentPositionTicks;
     }
 
     public Direction getDirection() {

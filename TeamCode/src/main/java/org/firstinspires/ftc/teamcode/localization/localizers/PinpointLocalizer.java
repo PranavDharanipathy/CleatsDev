@@ -19,7 +19,7 @@ public class PinpointLocalizer extends Localizer {
 
         localizer.setOffsets(lAttributes.getForwardPodOffsetMM(), lAttributes.getStrafePodOffsetMM(), DistanceUnit.MM);
 
-        double mmPerTick = lAttributes.getOdometryPodData().getInchesPerTick() * 25.4;
+        double mmPerTick = lAttributes.getOdometerData().getInchesPerTick() * 25.4;
         localizer.setEncoderResolution(1 / mmPerTick, DistanceUnit.MM);
 
         localizer.setEncoderDirections(lAttributes.getForwardPodDirection(), lAttributes.getStrafePodDirection());

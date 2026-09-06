@@ -30,7 +30,7 @@ public class HeadingLQRTest extends LinearOpMode {
     @Override
     public void runOpMode() {
 
-        pc = Constants.getPathController();
+        pc = Constants.getPathController(hardwareMap);
 
         telemetry.addLine("Robot will oscillate under self-tuned LQR the entire time.");
         telemetry.addLine("Press A to end, it'll finishes the current path before stopping.");

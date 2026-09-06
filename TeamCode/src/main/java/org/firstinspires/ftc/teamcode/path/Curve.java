@@ -13,15 +13,13 @@ public abstract class Curve extends Movement {
 
     private static final int COARSE_SAMPLES_PER_UNIT = 20;
     private static final int REFINE_SAMPLES = 20;
-    private static final int ARC_LENGTH_SAMPLES = 20;
+
+    private static final double[] GAUSS_NODES = {0, -0.5384693101056831, 0.5384693101056831, -0.9061798459386640, 0.9061798459386640};
+    private static final double[] GAUSS_WEIGHTS = {0.5688888888888889, 0.4786286704993665, 0.4786286704993665, 0.2369268850561891, 0.2369268850561891};
 
     private static final double COMPLETION_PARAM_EPSILON = 0.02;
     private static final double COMPLETION_POSITION_EPSILON = 1;
     private static final double COMPLETION_HEADING_EPSILON = Math.toRadians(2);
-
-    /// Cross track error at which the correction fully counterbalances the tangent.
-    private static final double CROSS_TRACK_SATURATION = 4;
-    private static final double MAX_CROSS_TRACK_GAIN = 2;
 
     protected HeadingOp headingOp = HeadingOp.tangentialHeading();
     protected boolean reversed = false;
@@ -33,6 +31,8 @@ public abstract class Curve extends Movement {
     private boolean hasProjectionCache;
     private double cacheX, cacheY, cacheParam, cacheDistance;
 
+    private Boolean degenerate;
+
     /// @param u ranges from 0 to {@link #getMaxParam}
     /// @return the position on the curve at parameter u
     protected abstract Pose evaluate(double u);
@@ -40,7 +40,7 @@ public abstract class Curve extends Movement {
     /// @return the upper end of the curve's parameter range (it starts at 0)
     protected abstract double getMaxParam();
 
-    protected double tangentAngle(double u) {
+    protected Pose derivative(double u) {
 
         double maxParam = getMaxParam();
         double h = maxParam * 1e-4 + 1e-6;
@@ -51,7 +51,13 @@ public abstract class Curve extends Movement {
         Pose a = evaluate(u0);
         Pose b = evaluate(u1);
 
-        return FastMath.atan2(b.y - a.y, b.x - a.x);
+        return new Pose((b.x - a.x) / (u1 - u0), (b.y - a.y) / (u1 - u0), 0);
+    }
+
+    protected double tangentAngle(double u) {
+
+        Pose d = derivative(u);
+        return FastMath.atan2(d.y, d.x);
     }
 
     protected double findBestParam(Pose currentPose) {
@@ -103,25 +109,38 @@ public abstract class Curve extends Movement {
         return bestU;
     }
 
+    //Gauss-Legendre quadrature significantly improves loop times
     private double arcLength(double from, double to) {
 
-        Pose prev = evaluate(from);
         double length = 0;
+        double a = from;
 
-        for (int i = 1; i <= ARC_LENGTH_SAMPLES; i++) {
+        while (a < to - 1e-12) {
 
-            Pose p = evaluate(from + (to - from) * i / ARC_LENGTH_SAMPLES);
-            length += Math.hypot(p.x - prev.x, p.y - prev.y);
-            prev = p;
+            double b = Math.min(Math.floor(a) + 1, to);
+
+            double half = (b - a) / 2d;
+            double mid = (a + b) / 2d;
+            double sum = 0;
+
+            for (int i = 0; i < GAUSS_NODES.length; i++) {
+
+                Pose d = derivative(mid + half * GAUSS_NODES[i]);
+                sum += GAUSS_WEIGHTS[i] * Math.hypot(d.x, d.y);
+            }
+
+            length += sum * half;
+            a = b;
         }
 
         return length;
     }
 
-    /// A path with no meaningful length is a pure rotation, so its projection can never
-    /// advance and position has to be judged only by distance to the end.
-    private boolean isDegenerate() {
-        return arcLength(0, getMaxParam()) < COMPLETION_POSITION_EPSILON;
+    private boolean isDegenerate() { //to deal with zero-length splines with only turning
+
+        if (degenerate == null) degenerate = arcLength(0, getMaxParam()) < COMPLETION_POSITION_EPSILON;
+
+        return degenerate;
     }
 
     private boolean positionReached(Pose currentPose) {
@@ -130,6 +149,13 @@ public abstract class Curve extends Movement {
         if (Math.hypot(currentPose.x - end.x, currentPose.y - end.y) >= COMPLETION_POSITION_EPSILON) return false;
 
         return isDegenerate() || findBestParam(currentPose) >= getMaxParam() - COMPLETION_PARAM_EPSILON;
+    }
+
+    private boolean projectionIsUseful(Pose currentPose) {
+
+        if (isDegenerate() || positionReached(currentPose)) return false;
+
+        return findBestParam(currentPose) < getMaxParam() - COMPLETION_PARAM_EPSILON;
     }
 
     private Pose resolvePose(double u) {
@@ -150,48 +176,38 @@ public abstract class Curve extends Movement {
     @Override
     public Pose getTarget(Pose currentPose) {
 
-        if (positionReached(currentPose)) return getEndPose();
+        if (isDegenerate() || positionReached(currentPose)) return getEndPose();
 
         return resolvePose(findBestParam(currentPose));
     }
 
-    /// Drives along the path's tangent at the nearest point, blended with a correction
-    /// perpendicular to it that scales with how far off the path the robot is.
     @Override
-    public Pose getDriveDirection(Pose currentPose) {
+    public Pose getTangentDirection(Pose currentPose) {
 
-        Pose end = evaluate(getMaxParam());
+        if (!projectionIsUseful(currentPose)) {
 
-        if (positionReached(currentPose)) {
+            Pose end = evaluate(getMaxParam());
             return toUnitVector(end.x - currentPose.x, end.y - currentPose.y);
         }
+
+        double tangent = tangentAngle(findBestParam(currentPose));
+
+        return new Pose(Math.cos(tangent), Math.sin(tangent), 0);
+    }
+
+    @Override
+    public double getSignedCrossTrack(Pose currentPose) {
+
+        if (!projectionIsUseful(currentPose)) return 0;
 
         double u = findBestParam(currentPose);
-
-        //past the end the projection is clamped, so the tangent no longer leads anywhere
-        if (u >= getMaxParam() - COMPLETION_PARAM_EPSILON) {
-            return toUnitVector(end.x - currentPose.x, end.y - currentPose.y);
-        }
-
         Pose point = evaluate(u);
         double tangent = tangentAngle(u);
 
-        double vx = Math.cos(tangent);
-        double vy = Math.sin(tangent);
-
         double towardPathX = point.x - currentPose.x;
         double towardPathY = point.y - currentPose.y;
-        double error = Math.hypot(towardPathX, towardPathY);
 
-        if (error > 0) {
-
-            double gain = MathHelper.clamp(error / CROSS_TRACK_SATURATION, 0, MAX_CROSS_TRACK_GAIN);
-
-            vx += (towardPathX / error) * gain;
-            vy += (towardPathY / error) * gain;
-        }
-
-        return toUnitVector(vx, vy);
+        return -towardPathX * Math.sin(tangent) + towardPathY * Math.cos(tangent);
     }
 
     @Override
@@ -200,7 +216,7 @@ public abstract class Curve extends Movement {
         Pose end = evaluate(getMaxParam());
         double straightLineToEnd = Math.hypot(end.x - currentPose.x, end.y - currentPose.y);
 
-        if (positionReached(currentPose)) return straightLineToEnd;
+        if (isDegenerate() || positionReached(currentPose)) return straightLineToEnd;
 
         return Math.max(arcLength(findBestParam(currentPose), getMaxParam()), straightLineToEnd);
     }
