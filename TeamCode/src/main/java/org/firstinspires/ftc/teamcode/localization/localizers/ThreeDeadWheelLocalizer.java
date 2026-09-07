@@ -18,8 +18,6 @@ public class ThreeDeadWheelLocalizer extends Localizer {
     private final double rightPodY;
     private final double strafePodX;
 
-    private double prevTime, currTime;
-
     public ThreeDeadWheelLocalizer(HardwareMap hardwareMap, ThreeDeadWheelAttributes attributes) {
 
         leftEncoder = new Encoder(
@@ -42,8 +40,6 @@ public class ThreeDeadWheelLocalizer extends Localizer {
         leftPodY = attributes.getLeftPodY();
         rightPodY = attributes.getRightPodY();
         strafePodX = attributes.getStrafePodX();
-
-        currTime = System.nanoTime() * 1e-9;
     }
 
     @Override
@@ -79,9 +75,7 @@ public class ThreeDeadWheelLocalizer extends Localizer {
         pose = pose.add(globalDelta);
         pose.normalizeHeading();
 
-        prevTime = currTime;
-        currTime = System.nanoTime() * 1e-9;
-        deltaTime = currTime - prevTime;
+        updateDeltaTime();
 
         if (deltaTime <= 0) return;
 

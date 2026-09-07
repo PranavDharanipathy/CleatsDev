@@ -18,8 +18,6 @@ public class DriveEncoderLocalizer extends Localizer {
     private final double chassisWidth;
     private final double chassisLength;
 
-    private double prevTime, currTime;
-
     public DriveEncoderLocalizer(HardwareMap hardwareMap, DriveEncoderAttributes attributes) {
 
         frontLeft = new Encoder(
@@ -42,8 +40,6 @@ public class DriveEncoderLocalizer extends Localizer {
 
         chassisWidth = attributes.getChassisWidth();
         chassisLength = attributes.getChassisLength();
-
-        currTime = System.nanoTime() * 1e-9;
     }
 
     @Override
@@ -78,9 +74,7 @@ public class DriveEncoderLocalizer extends Localizer {
         pose = pose.add(globalDelta);
         pose.normalizeHeading();
 
-        prevTime = currTime;
-        currTime = System.nanoTime() * 1e-9;
-        deltaTime = currTime - prevTime;
+        updateDeltaTime();
 
         if (deltaTime <= 0) return;
 

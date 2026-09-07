@@ -28,7 +28,8 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
     public static double POSITION_SEARCH_MAX = 36; //inches
     public static double EXIT_POSITION_SEARCH_MAX = 72; //inches
 
-    public static double HEADING_SEARCH_MIN_DEGREES = 1;
+    //keep the minimum above ALREADY_CLOSE_THRESHOLD_HEADING, a smaller trial can't be measured
+    public static double HEADING_SEARCH_MIN_DEGREES = 5;
     public static double HEADING_SEARCH_MAX_DEGREES = 60; //entry search ceiling
     public static double EXIT_HEADING_SEARCH_MAX_DEGREES = 90; //exit search ceiling
 
@@ -36,7 +37,7 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
 
     // Put here the value produced by LQROvershootDiagnosticTest
     private static final double ALREADY_CLOSE_THRESHOLD_POSITION = 1;
-    private static final double ALREADY_CLOSE_THRESHOLD_HEADING = 1;
+    private static final double ALREADY_CLOSE_THRESHOLD_HEADING = Math.toRadians(3);
 
     private static final double MAX_TRIAL_TIME = 5;
 
@@ -112,13 +113,16 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
         while (opModeIsActive()) ;
     }
 
-    private void checkManualDriving() {
+    /// @return seconds spent driving manually, so trial clocks can skip it
+    private double checkManualDriving() {
 
         boolean pressed = gamepad1.b;
         boolean justPressed = pressed && !bWasPressed;
         bWasPressed = pressed;
 
-        if (!justPressed) return;
+        if (!justPressed) return 0;
+
+        double pauseStart = getRuntime();
 
         boolean exitEdge = true; //b is currently held down from the entry press
 
@@ -142,6 +146,8 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
 
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
         bWasPressed = gamepad1.b;
+
+        return getRuntime() - pauseStart;
     }
 
     //searches utilize binary search
@@ -247,7 +253,7 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            checkManualDriving();
+            legStartTime += checkManualDriving();
 
             pc.update();
             Pose pose = pc.getFinalLocalizer().getPose();
@@ -333,7 +339,7 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            checkManualDriving();
+            legStartTime += checkManualDriving();
 
             pc.update();
             Pose pose = pc.getFinalLocalizer().getPose();

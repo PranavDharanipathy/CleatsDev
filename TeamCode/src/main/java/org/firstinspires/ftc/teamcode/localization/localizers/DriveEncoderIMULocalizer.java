@@ -26,8 +26,6 @@ public class DriveEncoderIMULocalizer extends Localizer {
     private double headingOffset;
     private double previousRawImuHeading;
 
-    private double prevTime, currTime;
-
     public DriveEncoderIMULocalizer(HardwareMap hardwareMap, DriveEncoderIMUAttributes attributes) {
 
         frontLeft = new Encoder(
@@ -62,8 +60,6 @@ public class DriveEncoderIMULocalizer extends Localizer {
         previousRawImuHeading = MathHelper.normalizeAngleRad(imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
 
         headingOffset = 0d;
-
-        currTime = System.nanoTime() * 1e-9;
     }
 
     @Override
@@ -112,10 +108,9 @@ public class DriveEncoderIMULocalizer extends Localizer {
         Pose globalDelta = MathHelper.exponentialIntegrate(robotDeltas, pose.heading);
 
         pose = pose.add(globalDelta);
+        pose.normalizeHeading();
 
-        prevTime = currTime;
-        currTime = System.nanoTime() * 1e-9;
-        deltaTime = currTime - prevTime;
+        updateDeltaTime();
 
         if (deltaTime <= 0) return;
 

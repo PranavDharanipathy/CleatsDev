@@ -8,10 +8,13 @@ public abstract class Localizer {
 
     protected double deltaTime;
 
+    private boolean firstUpdate = true;
+    private double previousTime, currentTime;
+
     public Localizer() {
 
-        pose = new Pose(0,0,0);
-        velocity = new Pose(0,0,0);
+        pose = new Pose();
+        velocity = new Pose();
 
         deltaTime = 0;
     }
@@ -19,6 +22,23 @@ public abstract class Localizer {
     public abstract void setPose(Pose pose);
 
     public abstract void update();
+
+    /// The first call reports 0 so the gap since construction isn't read as a loop.
+    protected void updateDeltaTime() {
+
+        previousTime = currentTime;
+        currentTime = System.nanoTime() * 1e-9;
+
+        if (firstUpdate) {
+
+            firstUpdate = false;
+            deltaTime = 0;
+
+            return;
+        }
+
+        deltaTime = currentTime - previousTime;
+    }
 
     public Pose getPose() {
         return pose;

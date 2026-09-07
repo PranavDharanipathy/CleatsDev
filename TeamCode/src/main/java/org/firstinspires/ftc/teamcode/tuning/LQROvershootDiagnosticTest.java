@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.tuning;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -8,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.following.PathController;
+import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
 
 //@Config
@@ -44,6 +46,9 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
         double avgX = 0, avgY = 0, avgHeading = 0;
         double m2X = 0, m2Y = 0, m2Heading = 0;
 
+        //heading is measured against the first sample, otherwise sitting near +/-180 wraps causing problems
+        Double referenceHeading = null;
+
         int count = 0;
 
         double startTime = getRuntime();
@@ -54,6 +59,9 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
             pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
             Pose pose = pc.getFinalLocalizer().getPose();
+
+            if (referenceHeading == null) referenceHeading = pose.heading;
+            double headingSample = MathHelper.normalizeAngleRad(pose.heading - referenceHeading);
 
             count++;
 
@@ -66,9 +74,9 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
             avgY += dy / count;
             m2Y += dy * (pose.y - avgY);
 
-            double dh = pose.heading - avgHeading;
+            double dh = headingSample - avgHeading;
             avgHeading += dh / count;
-            m2Heading += dh * (pose.heading - avgHeading);
+            m2Heading += dh * (headingSample - avgHeading);
 
             telemetry.addData("sampling", "%.3f / %.3f sec", getRuntime() - startTime, SAMPLE_DURATION);
             telemetry.update();

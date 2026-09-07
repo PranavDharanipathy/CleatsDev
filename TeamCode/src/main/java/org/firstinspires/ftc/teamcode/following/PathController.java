@@ -10,6 +10,7 @@ import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
 import org.firstinspires.ftc.teamcode.path.Maneuver;
 import org.firstinspires.ftc.teamcode.path.Movement;
+import org.firstinspires.ftc.teamcode.path.Rotation;
 
 public class PathController {
 
@@ -66,7 +67,7 @@ public class PathController {
     }
 
     /// Call once to start following a path.
-    /// @param precisionStop whether to use precision mode for end pose correction or not
+    /// @param precisionStop whether to use precision mode for end pose correction or not, ignored by rotations
     public void follow(Movement movement, boolean precisionStop) {
         follow(new Maneuver().addMovement(movement, null, precisionStop), precisionStop);
     }
@@ -77,7 +78,7 @@ public class PathController {
     }
 
     /// Call once to start following a series of movements.
-    /// @param precisionStop turns precision mode off for the whole maneuver
+    /// @param precisionStop turns precision mode off for the whole maneuver, ignored by rotations
     public void follow(Maneuver maneuver, boolean precisionStop) {
 
         currentManeuver = maneuver;
@@ -135,7 +136,9 @@ public class PathController {
             hasPreviousTargetHeading = false;
         }
 
-        boolean precisionStop = precisionStopEnabled && currentManeuver.isPrecisionAllowed();
+        //a rotation only holds its spot through the LQR, so precisionStop can't switch it off
+        boolean precisionStop = currentManeuver.isPrecisionAllowed()
+                && (precisionStopEnabled || movement instanceof Rotation);
 
         drive(movement, movement.getTarget(pose), movement.getEndPose(), precisionStop);
     }
@@ -385,7 +388,7 @@ public class PathController {
 
     /// @return if the maneuver isn't running or if precision mode has taken over
     public boolean hasSettled() {
-        return !isFollowing() || isOnPrecisionMode();
+        return !isFollowing() || (currentManeuver.isOnLastMovement() && isOnPrecisionMode());
     }
 
     /// @return whether a maneuver is currently being followed

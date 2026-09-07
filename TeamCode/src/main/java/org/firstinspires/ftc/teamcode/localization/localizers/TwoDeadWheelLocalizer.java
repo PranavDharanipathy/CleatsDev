@@ -21,8 +21,6 @@ public class TwoDeadWheelLocalizer extends Localizer {
 
     private double previousImuHeading;
 
-    private double prevTime, currTime;
-
     public TwoDeadWheelLocalizer(HardwareMap hardwareMap, TwoDeadWheelAttributes attributes) {
 
         forwardEncoder = new Encoder(
@@ -45,8 +43,6 @@ public class TwoDeadWheelLocalizer extends Localizer {
         imu.resetYaw();
 
         previousImuHeading = MathHelper.normalizeAngleRad(imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
-
-        currTime = System.nanoTime() * 1e-9;
     }
 
     @Override
@@ -78,9 +74,7 @@ public class TwoDeadWheelLocalizer extends Localizer {
         pose = pose.add(globalDelta);
         pose.normalizeHeading();
 
-        prevTime = currTime;
-        currTime = System.nanoTime() * 1e-9;
-        deltaTime = currTime - prevTime;
+        updateDeltaTime();
 
         if (deltaTime <= 0) return;
 

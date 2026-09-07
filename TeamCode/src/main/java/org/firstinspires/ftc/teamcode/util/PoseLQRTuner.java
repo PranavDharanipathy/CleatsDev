@@ -32,7 +32,7 @@ public class PoseLQRTuner {
 
     public PoseLQRController update(double forwardError, double forwardVelocity, double strafeError, double strafeVelocity, double headingError, double angularVelocity, double dt) {
 
-        double omegaCap = 1d / (LOOP_ITERATIONS_PER_TIME_CONSTANT * dt);
+        double omegaCap = dt > 0 ? 1d / (LOOP_ITERATIONS_PER_TIME_CONSTANT * dt) : 0;
 
         double maxAccelForward = mecanumProfile.getMaxAcceleration(0);
         double maxAccelStrafe = mecanumProfile.getMaxAcceleration(Math.PI / 2d);

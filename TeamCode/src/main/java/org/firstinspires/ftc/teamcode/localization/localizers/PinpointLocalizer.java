@@ -26,11 +26,7 @@ public class PinpointLocalizer extends Localizer {
         localizer.resetPosAndIMU();
 
         localizer.setPosition(new Pose2D(DistanceUnit.INCH, 0,0, AngleUnit.RADIANS, 0));
-
-        currTime = System.nanoTime() * 1e-9;
     }
-
-    private double prevTime, currTime;
 
     @Override
     public void setPose(Pose pose) {
@@ -45,14 +41,10 @@ public class PinpointLocalizer extends Localizer {
         localizer.update();
         pose = Pose.pose2DToPose(localizer.getPosition());
 
-        prevTime = currTime;
-        currTime = System.nanoTime() * 1e-9;
-        deltaTime = currTime - prevTime;
-
-        if (deltaTime <= 0) return;
-
+        //measured by the pod, not derived from dt
         velocity = new Pose(localizer.getVelX(DistanceUnit.INCH), localizer.getVelY(DistanceUnit.INCH), localizer.getHeadingVelocity(AngleUnit.RADIANS.getUnnormalized()));
 
+        updateDeltaTime();
     }
 
 }

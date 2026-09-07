@@ -8,7 +8,8 @@ import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
 
 /// A chain of movements followed as one continuous motion. Precision only engages
-/// at the end of a movement that is waited on, followed by a rotation, or last.
+/// at the end of a movement that is waited on, followed by a rotation, last, or
+/// otherwise specified.
 public class Maneuver {
 
     private static class Step {
@@ -54,7 +55,7 @@ public class Maneuver {
         return add(movement, event, null);
     }
 
-    /// @param precisionStop overrides the LQR handoff for this movement only
+    /// @param precisionStop overrides the LQR handoff for this movement only, ignored by rotations
     public Maneuver addMovement(Movement movement, Event event, boolean precisionStop) {
         return add(movement, event, precisionStop);
     }
@@ -85,8 +86,10 @@ public class Maneuver {
 
         Step step = steps.get(i);
 
-        if (step.precisionStop != null) return step.precisionStop;
+        //a rotation covers no ground and is held in place by the LQR alone, so this is not overridable
         if (step.movement instanceof Rotation) return true;
+
+        if (step.precisionStop != null) return step.precisionStop;
         if (step.waitSeconds > 0) return true;
         if (i == steps.size() - 1) return true;
 
@@ -134,8 +137,7 @@ public class Maneuver {
             step.length = replanned.getRemainingDistance(currentPose);
         }
 
-        //a rotation covers no ground, so the distance handoff would skip it instantly
-        boolean settles = usesPrecision(index) || step.movement instanceof Rotation || handoffDistance <= 0;
+        boolean settles = usesPrecision(index) || handoffDistance <= 0;
 
         double remaining = step.movement.getRemainingDistance(currentPose);
 
@@ -219,6 +221,10 @@ public class Maneuver {
     /// Whether the chain is holding an end pose while a waitSeconds runs down.
     public boolean isWaiting() {
         return isFollowing() && steps.get(index).waiting;
+    }
+
+    public boolean isOnLastMovement() {
+        return isFollowing() && index == steps.size() - 1;
     }
 
     public Movement getCurrentMovement() {
