@@ -386,7 +386,6 @@ public class PathController {
         return headingMode;
     }
 
-    /// @return if the maneuver isn't running or if precision mode has taken over
     public boolean hasSettled() {
         return !isFollowing() || (currentManeuver.isOnLastMovement() && isOnPrecisionMode());
     }
