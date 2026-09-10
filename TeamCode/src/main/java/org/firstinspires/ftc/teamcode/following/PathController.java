@@ -344,6 +344,10 @@ public class PathController {
         return currentManeuver != null && currentManeuver.isWaiting();
     }
 
+    public boolean isOnLastMovement() {
+        return currentManeuver != null && currentManeuver.isOnLastMovement();
+    }
+
     public Chassis getChassis() {
         return chassis;
     }
@@ -387,7 +391,7 @@ public class PathController {
     }
 
     public boolean hasSettled() {
-        return !isFollowing() || (currentManeuver.isOnLastMovement() && isOnPrecisionMode());
+        return !isFollowing() || (isOnLastMovement() && isOnPrecisionMode());
     }
 
     /// @return whether a maneuver is currently being followed
