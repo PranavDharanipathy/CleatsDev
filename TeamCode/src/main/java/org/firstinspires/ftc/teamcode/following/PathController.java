@@ -308,8 +308,7 @@ public class PathController {
 
         boolean movingTowardTarget = error * closingVelocity > 0;
 
-        if (movingTowardTarget && Math.abs(error) <= stoppingDistance)
-            return -Math.signum(closingVelocity);
+        if (movingTowardTarget && Math.abs(error) <= stoppingDistance) return -Math.signum(closingVelocity);
 
         return Math.signum(error);
     }
@@ -324,8 +323,7 @@ public class PathController {
 
         boolean turningTowardTarget = error * angularVelocity > 0;
 
-        if (turningTowardTarget && Math.abs(error) <= stoppingAngle)
-            return -Math.signum(angularVelocity);
+        if (turningTowardTarget && Math.abs(error) <= stoppingAngle) return -Math.signum(angularVelocity);
 
         return Math.signum(error);
     }
