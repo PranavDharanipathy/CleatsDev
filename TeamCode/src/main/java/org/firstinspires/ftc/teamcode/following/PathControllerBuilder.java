@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.following;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.following.chassis.BrakingModel;
 import org.firstinspires.ftc.teamcode.following.chassis.Chassis;
 import org.firstinspires.ftc.teamcode.following.chassis.MotionConstraints;
 import org.firstinspires.ftc.teamcode.following.config.ChassisMotorDirectionsConfig;
@@ -25,6 +26,8 @@ public class PathControllerBuilder {
     private FinalLocalizerNKFConfig accelerationXConfig, accelerationYConfig, accelerationHeadingConfig;
 
     private MotionConstraints motionConstraints;
+
+    private Lazy<BrakingModel> brakingModel;
 
     private Lazy<PoseLQRController> poseLQRController;
 
@@ -84,6 +87,11 @@ public class PathControllerBuilder {
         return this;
     }
 
+    public PathControllerBuilder brakingModel(Supplier<BrakingModel> brakingModel) {
+        this.brakingModel = new Lazy<>(brakingModel);
+        return this;
+    }
+
     public PathControllerBuilder poseLQRController(Supplier<PoseLQRController> poseLQRController) {
         this.poseLQRController = new Lazy<>(poseLQRController);
         return this;
@@ -99,8 +107,8 @@ public class PathControllerBuilder {
         FinalLocalizer localizer = new FinalLocalizer(this.localizer.get());
 
         localizer.setNoiseFilterParameters(
-            velocityXConfig.assemble(), velocityYConfig.assemble(), velocityHeadingConfig.assemble(),
-            accelerationXConfig.assemble(), accelerationYConfig.assemble(), accelerationHeadingConfig.assemble()
+                velocityXConfig.assemble(), velocityYConfig.assemble(), velocityHeadingConfig.assemble(),
+                accelerationXConfig.assemble(), accelerationYConfig.assemble(), accelerationHeadingConfig.assemble()
         );
 
         return new PathController(
@@ -112,6 +120,7 @@ public class PathControllerBuilder {
                 ),
                 localizer,
                 motionConstraints,
+                brakingModel.get(),
                 poseLQRController.get(),
                 precisionModeThresholds
         );

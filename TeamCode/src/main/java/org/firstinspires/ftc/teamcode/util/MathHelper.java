@@ -18,21 +18,6 @@ public class MathHelper {
         return FastMath.atan2(Math.sin(angleRad), Math.cos(angleRad));
     }
 
-    /// @param array must be sorted
-    public static double[] findBoundingValues(double[] array, double value) {
-
-        for (int index = 0; index < array.length - 1; index++) {
-            double lower = array[index];
-            double upper = array[index + 1];
-
-            if (value >= lower && value <= upper) {
-                return new double[] {lower, upper};
-            }
-        }
-
-        throw new IllegalArgumentException("No bounding values for input: value cannot be found from input array!");
-    }
-
     // Integrates robot-relative motion using the SE(2) exponential map.
     public static Pose exponentialIntegrate(Pose robotDeltas, double previousHeading) {
 

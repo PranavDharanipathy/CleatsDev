@@ -32,6 +32,7 @@ public abstract class Curve extends Movement {
     private double cacheX, cacheY, cacheParam, cacheDistance;
 
     private Boolean degenerate;
+    private Double totalLength;
 
     /// @param u ranges from 0 to {@link #getMaxParam}
     /// @return the position on the curve at parameter u
@@ -136,11 +137,31 @@ public abstract class Curve extends Movement {
         return length;
     }
 
+    private double getTotalLength() {
+
+        if (totalLength == null) totalLength = arcLength(0, getMaxParam());
+
+        return totalLength;
+    }
+
     private boolean isDegenerate() { //to deal with zero-length splines with only turning
 
-        if (degenerate == null) degenerate = arcLength(0, getMaxParam()) < COMPLETION_POSITION_EPSILON;
+        if (degenerate == null) degenerate = getTotalLength() < COMPLETION_POSITION_EPSILON;
 
         return degenerate;
+    }
+
+    /// How far along the curve's own length the parameter sits, 0 to 1. Measured by arc
+    /// length rather than by parameter so unevenly spaced points don't skew it.
+    protected double getLocalProgress(double u) {
+
+        double total = getTotalLength();
+
+        if (total <= 0) return 0;
+
+        double maxParam = getMaxParam();
+
+        return MathHelper.clamp(1 - arcLength(MathHelper.clamp(u, 0, maxParam), maxParam) / total, 0, 1);
     }
 
     private boolean positionReached(Pose currentPose) {
@@ -151,7 +172,7 @@ public abstract class Curve extends Movement {
         return isDegenerate() || findBestParam(currentPose) >= getMaxParam() - COMPLETION_PARAM_EPSILON;
     }
 
-    private boolean projectionIsUseful(Pose currentPose) {
+    private boolean isProjectionUseful(Pose currentPose) {
 
         if (isDegenerate() || positionReached(currentPose)) return false;
 
@@ -164,9 +185,7 @@ public abstract class Curve extends Movement {
 
         if (headingOp == null) return point; //only if 'null' is explicitly provided
 
-        double maxParam = getMaxParam();
-        double localProgress = maxParam > 0 ? MathHelper.clamp(u / maxParam, 0, 1) : 0;
-        double progress = progressStart + localProgress * progressSpan;
+        double progress = progressStart + getLocalProgress(u) * progressSpan;
 
         double heading = headingOp.heading(progress, point.x, point.y, tangentAngle(u), reversed);
 
@@ -184,7 +203,7 @@ public abstract class Curve extends Movement {
     @Override
     public Pose getTangentDirection(Pose currentPose) {
 
-        if (!projectionIsUseful(currentPose)) {
+        if (!isProjectionUseful(currentPose)) {
 
             Pose end = evaluate(getMaxParam());
             return toUnitVector(end.x - currentPose.x, end.y - currentPose.y);
@@ -198,7 +217,7 @@ public abstract class Curve extends Movement {
     @Override
     public double getSignedCrossTrack(Pose currentPose) {
 
-        if (!projectionIsUseful(currentPose)) return 0;
+        if (!isProjectionUseful(currentPose)) return 0;
 
         double u = findBestParam(currentPose);
         Pose point = evaluate(u);

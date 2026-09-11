@@ -7,6 +7,7 @@ import org.firstinspires.ftc.teamcode.following.PathController;
 import org.firstinspires.ftc.teamcode.following.PathControllerBuilder;
 import org.firstinspires.ftc.teamcode.following.PoseLQRController;
 import org.firstinspires.ftc.teamcode.following.PrecisionModeThresholds;
+import org.firstinspires.ftc.teamcode.following.chassis.BrakingModel;
 import org.firstinspires.ftc.teamcode.following.chassis.MotionConstraints;
 import org.firstinspires.ftc.teamcode.following.config.ChassisMotorDirectionsConfig;
 import org.firstinspires.ftc.teamcode.following.config.ChassisMotorNamesConfig;
@@ -23,10 +24,10 @@ public class Constants {
         return new PathControllerBuilder(hardwareMap)
                 .chassisMotorDirectionsConfig(
                         new ChassisMotorDirectionsConfig(
-                        DcMotorSimple.Direction.REVERSE,
-                        DcMotorSimple.Direction.FORWARD,
-                        DcMotorSimple.Direction.REVERSE,
-                        DcMotorSimple.Direction.FORWARD
+                                DcMotorSimple.Direction.REVERSE,
+                                DcMotorSimple.Direction.FORWARD,
+                                DcMotorSimple.Direction.REVERSE,
+                                DcMotorSimple.Direction.FORWARD
                         )
                 )
                 .chassisMotorNamesConfig(
@@ -65,6 +66,17 @@ public class Constants {
                                 0, 0, 0, 0
                         )
                 )
+                .brakingModel(() -> new BrakingModel(
+                                new double[] {10, 20, 30, 40, 50},
+                                new double[] {0, 0, 0, 0, 0},
+                                new double[] {0, 0, 0, 0, 0},
+                                new double[] {0, 0, 0, 0, 0},
+                                new double[] {2, 4, 6, 8},
+                                new double[] {0, 0, 0, 0},
+                                0,
+                                0,
+                                0
+                ))
                 .poseLQRController(() -> new PoseLQRController(
                         0, 0,
                         0, 0,

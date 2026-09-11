@@ -31,22 +31,20 @@ public class SlipPreventedWheel {
         wheel.setZeroPowerBehavior(zeroPowerBehavior);
     }
 
+    /// Slip happens when torque grows, whichever way the wheel is turning, so the ramp
+    /// limits magnitude. Reversals and any drop in magnitude still land immediately.
     public void setPower(double requestedPower, double dt) {
 
         prevPower = currPower;
 
         double maxDelta = rampRate * Math.max(0, dt);
 
-        if (prevPower >= 0) {
-            currPower = requestedPower > prevPower
-                    ? Math.min(requestedPower, prevPower + maxDelta)
-                    : requestedPower;
+        boolean sameDirection = requestedPower * prevPower >= 0;
+
+        if (sameDirection && Math.abs(requestedPower) > Math.abs(prevPower)) {
+            currPower = Math.signum(requestedPower) * Math.min(Math.abs(requestedPower), Math.abs(prevPower) + maxDelta);
         }
-        else {
-            currPower = requestedPower < prevPower
-                    ? Math.max(requestedPower, prevPower - maxDelta)
-                    : requestedPower;
-        }
+        else currPower = requestedPower;
 
         wheel.setPower(currPower);
     }

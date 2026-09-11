@@ -61,6 +61,12 @@ public class HermiteSpline extends Curve {
         return this;
     }
 
+    /// Sets a different heading control for each part of the path.
+    public HermiteSpline setHeadingOp(HeadingOp.Slice... slices) {
+        this.headingOp = HeadingOp.compound(slices);
+        return this;
+    }
+
     public HermiteSpline setReplan(double offShootDistance) {
         setReplanner(this::replanFrom, offShootDistance);
         return this;
@@ -85,8 +91,7 @@ public class HermiteSpline extends Curve {
         replanned.headingOp = this.headingOp;
         replanned.reversed = this.reversed;
 
-        double localProgress = numSegments > 0 ? MathHelper.clamp(u / numSegments, 0, 1) : 0;
-        double originalProgressAtReplan = progressStart + localProgress * progressSpan;
+        double originalProgressAtReplan = progressStart + getLocalProgress(u) * progressSpan;
 
         replanned.progressStart = originalProgressAtReplan;
         replanned.progressSpan = (progressStart + progressSpan) - originalProgressAtReplan;
@@ -152,7 +157,7 @@ public class HermiteSpline extends Curve {
         double x = d00 * p0.x + d10 * tangentX[segment] + d20 * accelX[segment] + d01 * p1.x + d11 * tangentX[segment + 1] + d21 * accelX[segment + 1];
         double y = d00 * p0.y + d10 * tangentY[segment] + d20 * accelY[segment] + d01 * p1.y + d11 * tangentY[segment + 1] + d21 * accelY[segment + 1];
 
-        return new Pose(x, y, 0);
+        return new Pose(x, y);
     }
 
     @Override

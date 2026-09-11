@@ -85,13 +85,20 @@ public abstract class Rotation extends Movement {
         return new Pose(startPose.x, startPose.y, MathHelper.normalizeAngleRad(startPose.heading + targetRotation));
     }
 
+    /// A rotation follows no translational path, it holds the spot it started on.
     @Override
     public Pose getTangentDirection(Pose currentPose) {
-        return new Pose();
+
+        if (!started) return new Pose();
+
+        return toUnitVector(startPose.x - currentPose.x, startPose.y - currentPose.y);
     }
 
     @Override
     public double getRemainingDistance(Pose currentPose) {
-        return 0;
+
+        if (!started) return 0;
+
+        return Math.hypot(startPose.x - currentPose.x, startPose.y - currentPose.y);
     }
 }

@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.following;
 
 import org.apache.commons.math3.util.FastMath;
 
+import org.firstinspires.ftc.teamcode.following.chassis.BrakingModel;
 import org.firstinspires.ftc.teamcode.following.chassis.Chassis;
 import org.firstinspires.ftc.teamcode.following.chassis.MecanumProfile;
 import org.firstinspires.ftc.teamcode.following.chassis.MotionConstraints;
@@ -23,12 +24,16 @@ public class PathController {
         TRANSIT, PRECISION
     }
 
+    /// Share of the wheels a rotation's position hold may take while the turn is braking.
+    private static final double ROTATION_HOLD_BRAKE_AUTHORITY = 0.15;
+
     private final Chassis chassis;
     private final MotionConstraints motionConstraints;
     private final MecanumProfile mecanumProfile;
+    private final BrakingModel brakingModel;
 
     private final FinalLocalizer localizer;
-    private Pose pose, velocity, acceleration;
+    private Pose pose = new Pose(), velocity = new Pose(), acceleration = new Pose();
 
     private double dt;
 
@@ -45,7 +50,7 @@ public class PathController {
     private double previousTargetHeading;
     private boolean hasPreviousTargetHeading;
 
-    public PathController(Chassis chassis, FinalLocalizer localizer, MotionConstraints motionConstraints, PoseLQRController poseLQR, PrecisionModeThresholds precisionModeThresholds) {
+    public PathController(Chassis chassis, FinalLocalizer localizer, MotionConstraints motionConstraints, BrakingModel brakingModel, PoseLQRController poseLQR, PrecisionModeThresholds precisionModeThresholds) {
 
         this.chassis = chassis;
 
@@ -54,6 +59,7 @@ public class PathController {
         this.motionConstraints = motionConstraints;
         mecanumProfile = this.motionConstraints.makeMecanumProfile();
 
+        this.brakingModel = brakingModel;
         this.poseLQR = poseLQR;
         this.precisionModeThresholds = precisionModeThresholds;
 
@@ -129,14 +135,13 @@ public class PathController {
             return;
         }
 
-        //a new movement means a new heading target, so the feedforward can't carry over
         if (movement != drivenMovement) {
 
             drivenMovement = movement;
             hasPreviousTargetHeading = false;
         }
 
-        //a rotation only holds its spot through the LQR, so precisionStop can't switch it off
+        //a rotation only holds its spot through the LQR, precisionStop won't disable it
         boolean precisionStop = currentManeuver.isPrecisionAllowed()
                 && (precisionStopEnabled || movement instanceof Rotation);
 
@@ -197,29 +202,23 @@ public class PathController {
 
             Pose tangent = movement.getTangentDirection(pose);
 
-            double alongRemaining = movement.getRemainingDistance(pose);
-            double crossTrack = movement.getSignedCrossTrack(pose);
-
-            double normalX = -tangent.y;
-            double normalY = tangent.x;
+            final double normalX = -tangent.y;
+            final double normalY = tangent.x;
 
             double alongCommand = 0;
 
-            if (tangent.x != 0 || tangent.y != 0) {
+            if (tangent.x != 0 || tangent.y != 0)
+                alongCommand = axisCommand(
+                        movement.getRemainingDistance(pose),
+                        velocity.x * tangent.x + velocity.y * tangent.y,
+                        robotFrameAngle(tangent.x, tangent.y)
+                );
 
-                double closingVelocity = velocity.x * tangent.x + velocity.y * tangent.y;
-                alongCommand = shouldAccelerateOrBrake(alongRemaining, closingVelocity, tangent.x, tangent.y);
-            }
-
-            double crossCommand = 0;
-            double crossDirection = Math.signum(crossTrack);
-
-            if (crossDirection != 0) {
-
-                double closingVelocity = (velocity.x * normalX + velocity.y * normalY) * crossDirection;
-
-                crossCommand = crossDirection * shouldAccelerateOrBrake(Math.abs(crossTrack), closingVelocity, normalX * crossDirection, normalY * crossDirection);
-            }
+            double crossCommand = axisCommand(
+                    movement.getSignedCrossTrack(pose),
+                    velocity.x * normalX + velocity.y * normalY,
+                    robotFrameAngle(normalX, normalY)
+            );
 
             double driveX = alongCommand * tangent.x + crossCommand * normalX;
             double driveY = alongCommand * tangent.y + crossCommand * normalY;
@@ -229,29 +228,27 @@ public class PathController {
 
             if (driveX != 0 || driveY != 0) {
 
-                double robotFrameAngle = MathHelper.normalizeAngleRad(FastMath.atan2(driveY, driveX) - pose.heading);
+                double driveAngle = robotFrameAngle(driveX, driveY);
 
-                desiredForward = Math.cos(robotFrameAngle);
-                desiredStrafe = -Math.sin(robotFrameAngle);
+                desiredForward = Math.cos(driveAngle);
+                desiredStrafe = -Math.sin(driveAngle);
             }
         }
 
         double desiredTurn;
 
         if (headingMode == Mode.PRECISION) desiredTurn = lqrTurn;
-        else {
+        else desiredTurn = headingCommand(MathHelper.normalizeAngleRad(target.heading - pose.heading), velocity.heading);
 
-            double headingError = MathHelper.normalizeAngleRad(target.heading - pose.heading);
-            double remainingHeading = Math.abs(headingError);
-            double headingDirection = Math.signum(headingError);
+        //the turn's braking distance assumes it owns the wheels, so holding yields while it brakes
+        if (movement instanceof Rotation && desiredTurn * velocity.heading < 0) {
 
-            double closingAngularVelocity = velocity.heading * headingDirection;
-            double headingStoppingAngle = closingAngularVelocity > 0
-                    ? (closingAngularVelocity * closingAngularVelocity) / (2d * motionConstraints.getDmaxH())
-                    : 0;
+            double magnitude = Math.hypot(desiredForward, desiredStrafe);
 
-            boolean headingAccelerating = remainingHeading > headingStoppingAngle;
-            desiredTurn = (headingAccelerating ? 1 : -1) * headingDirection;
+            if (magnitude > ROTATION_HOLD_BRAKE_AUTHORITY) {
+                desiredForward *= ROTATION_HOLD_BRAKE_AUTHORITY / magnitude;
+                desiredStrafe *= ROTATION_HOLD_BRAKE_AUTHORITY / magnitude;
+            }
         }
 
         chassis.setDrivePower(desiredForward, desiredStrafe, desiredTurn, dt);
@@ -300,16 +297,41 @@ public class PathController {
         }
     }
 
-    //1 when there's room to keep speeding up, -1 once there's enough room left to stop
-    private double shouldAccelerateOrBrake(double remaining, double closingVelocity, double axisX, double axisY) {
+    private double axisCommand(double error, double closingVelocity, double axisAngle) {
 
-        double robotFrameAngle = MathHelper.normalizeAngleRad(FastMath.atan2(axisY, axisX) - pose.heading);
+        final double margin = brakingModel.getMargin();
 
-        double stoppingDistance = closingVelocity > 0
-                ? (closingVelocity * closingVelocity) / (2d * mecanumProfile.getMaxDeceleration(robotFrameAngle))
-                : 0;
+        double stoppingDistance = brakingModel.getStoppingDistance(axisAngle, Math.abs(closingVelocity));
 
-        return remaining > stoppingDistance ? 1 : -1;
+        //inside the margin and able to stop inside it, so there is nothing worth commanding
+        if (Math.abs(error) < margin && stoppingDistance < margin) return 0;
+
+        boolean movingTowardTarget = error * closingVelocity > 0;
+
+        if (movingTowardTarget && Math.abs(error) <= stoppingDistance)
+            return -Math.signum(closingVelocity);
+
+        return Math.signum(error);
+    }
+
+    private double headingCommand(double error, double angularVelocity) {
+
+        final double margin = brakingModel.getAngularMargin();
+
+        double stoppingAngle = brakingModel.getAngularStoppingDistance(Math.abs(angularVelocity));
+
+        if (Math.abs(error) < margin && stoppingAngle < margin) return 0;
+
+        boolean turningTowardTarget = error * angularVelocity > 0;
+
+        if (turningTowardTarget && Math.abs(error) <= stoppingAngle)
+            return -Math.signum(angularVelocity);
+
+        return Math.signum(error);
+    }
+
+    private double robotFrameAngle(double axisX, double axisY) {
+        return MathHelper.normalizeAngleRad(FastMath.atan2(axisY, axisX) - pose.heading);
     }
 
     /// @return inches left in the whole maneuver, along the paths themselves
@@ -364,6 +386,10 @@ public class PathController {
         return mecanumProfile;
     }
 
+    public BrakingModel getBrakingModel() {
+        return brakingModel;
+    }
+
     public boolean isTranslationOnPrecisionMode() {
         return translationMode == Mode.PRECISION;
     }
@@ -390,8 +416,9 @@ public class PathController {
         return headingMode;
     }
 
+    /// @return if the maneuver isn't running or if precision mode has taken over
     public boolean hasSettled() {
-        return !isFollowing() || (isOnLastMovement() && isOnPrecisionMode());
+        return !isFollowing() || isOnPrecisionMode();
     }
 
     /// @return whether a maneuver is currently being followed

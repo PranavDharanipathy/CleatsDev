@@ -11,19 +11,19 @@ import org.firstinspires.ftc.teamcode.util.MathHelper;
 public class MecanumProfile {
 
     /*
-    * === Profile shape ===
-    *
-    *        /\
-    *       *  *
-    *      *    *
-    *    *        *
-    * <              >
-    *    *        *
-    *      *    *
-    *       *  *
-    *        \/
-    *
-    *   - Lamé curve (superellipse)
+     * === Profile shape ===
+     *
+     *        /\
+     *       *  *
+     *      *    *
+     *    *        *
+     * <              >
+     *    *        *
+     *      *    *
+     *       *  *
+     *        \/
+     *
+     *   - Lamé curve (superellipse)
      */
 
     private final double vmaxF, vmaxS, velocityShape;
@@ -76,23 +76,23 @@ public class MecanumProfile {
         return MathHelper.lameValue(angle, dmaxF, dmaxS, decelerationShape);
     }
 
-    private double solveShapeExponent(double a, double b, double diagonalValue) {
+    static double solveShapeExponent(double a, double b, double diagonalValue) {
 
-        double lo = 0.01;
-        double hi = 100;
+        double low = 0.01;
+        double high = 100;
 
         final int BISECTION_ITERATIONS = 80; //~60 is enough but a larger value is used to ensure accuracy
 
         for (int i = 0; i < BISECTION_ITERATIONS; i++) {
 
-            double mid = (lo + hi) / 2d;
+            double mid = (low + high) / 2d;
             double predicted = MathHelper.lameValue(Math.PI / 4d, a, b, mid);
 
-            if (predicted < diagonalValue) lo = mid;
-            else hi = mid;
+            if (predicted < diagonalValue) low = mid;
+            else high = mid;
         }
 
-        return (lo + hi) / 2d;
+        return (low + high) / 2d;
     }
 
 }
