@@ -254,6 +254,12 @@ public abstract class Curve extends Movement {
         return resolvePose(getMaxParam());
     }
 
+    /// Reads curve without needing robot pose.
+    /// @param t 0 to 1 across the curve's parameter range
+    public Pose sample(double t) {
+        return resolvePose(MathHelper.clamp(t, 0, 1) * getMaxParam());
+    }
+
     /// Cross-track distance from the robot to the nearest point on the curve.
     @Override
     public double getPathError(Pose currentPose) {
