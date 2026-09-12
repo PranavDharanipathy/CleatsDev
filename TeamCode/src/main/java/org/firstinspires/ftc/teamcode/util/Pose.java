@@ -71,4 +71,7 @@ public class Pose {
         return new Pose(pose2D.getX(INCH), pose2D.getY(INCH), pose2D.getHeading(RADIANS));
     }
 
+    public Pose copy() {
+        return new Pose(x, y, heading);
+    }
 }
