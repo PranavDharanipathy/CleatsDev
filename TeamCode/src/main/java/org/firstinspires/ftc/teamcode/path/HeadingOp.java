@@ -11,6 +11,9 @@ public interface HeadingOp {
 
     double DEFAULT_EXPONENTIAL_RATE = 4;
 
+    /// Share of a path spent swinging onto and off its own direction when the robot is unknown.
+    double DEFAULT_HEADING_SWING = 0.25;
+
     double SLICE_EPSILON = 1e-6;
 
     /// @param progress progress along the path (0 to 1)
@@ -70,6 +73,33 @@ public interface HeadingOp {
     static HeadingOp tangentialHeading() {
         return (progress, x, y, tangentAngle, reversed) ->
                 MathHelper.normalizeAngleRad(tangentAngle + (reversed ? Math.PI : 0));
+    }
+
+    /// Reaches endHeading efficiently as possible
+    static HeadingOp efficientHeading(double startHeading, double endHeading) {
+        return efficientHeading(startHeading, endHeading, DEFAULT_HEADING_SWING, DEFAULT_HEADING_SWING);
+    }
+
+    /// @param entryShare how much of the path's start is spent swinging onto its direction, 0 to 1
+    /// @param settleShare how much of the path's end is spent swinging onto the end heading, 0 to 1
+    static HeadingOp efficientHeading(double startHeading, double endHeading, double entryShare, double settleShare) {
+
+        double leaving = MathHelper.clamp(entryShare, SLICE_EPSILON, 1);
+        double arriving = MathHelper.clamp(settleShare, SLICE_EPSILON, 1 - leaving + SLICE_EPSILON);
+
+        return (progress, x, y, tangentAngle, reversed) -> {
+
+            double along = MathHelper.normalizeAngleRad(tangentAngle + (reversed ? Math.PI : 0));
+
+            //brisk leaving a heading and easy arriving on one, both times: what costs a run is
+            //still swinging when the robot gets there, never having swung early
+            double off = 1 - MathHelper.clamp(progress / leaving, 0, 1);
+            double left = MathHelper.clamp((1 - progress) / arriving, 0, 1);
+
+            return MathHelper.normalizeAngleRad(along
+                    + off * off * MathHelper.normalizeAngleRad(startHeading - along)
+                    + (1 - left * left) * MathHelper.normalizeAngleRad(endHeading - along));
+        };
     }
 
     static HeadingOp facePoint(double pointX, double pointY) {

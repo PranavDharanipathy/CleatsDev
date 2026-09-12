@@ -52,7 +52,7 @@ public abstract class Curve extends Movement {
         Pose a = evaluate(u0);
         Pose b = evaluate(u1);
 
-        return new Pose((b.x - a.x) / (u1 - u0), (b.y - a.y) / (u1 - u0), 0);
+        return new Pose((b.x - a.x) / (u1 - u0), (b.y - a.y) / (u1 - u0));
     }
 
     protected double tangentAngle(double u) {
@@ -151,8 +151,8 @@ public abstract class Curve extends Movement {
         return degenerate;
     }
 
-    /// How far along the curve's own length the parameter sits, 0 to 1. Measured by arc
-    /// length rather than by parameter so unevenly spaced points don't skew it.
+    /// How far along the curve's own length the parameter sits, 0 to 1. Measured by
+    /// arc length rather than by parameter so unevenly spaced points don't skew it.
     protected double getLocalProgress(double u) {
 
         double total = getTotalLength();
@@ -211,7 +211,7 @@ public abstract class Curve extends Movement {
 
         double tangent = tangentAngle(findBestParam(currentPose));
 
-        return new Pose(Math.cos(tangent), Math.sin(tangent), 0);
+        return new Pose(Math.cos(tangent), Math.sin(tangent));
     }
 
     @Override
@@ -227,6 +227,49 @@ public abstract class Curve extends Movement {
         double towardPathY = point.y - currentPose.y;
 
         return -towardPathX * Math.sin(tangent) + towardPathY * Math.cos(tangent);
+    }
+
+    @Override
+    public double getCurvature(Pose currentPose, double aheadDistance, double allowedCut) {
+
+        if (!isProjectionUseful(currentPose) || allowedCut <= 0) return 0;
+
+        final double maxParam = getMaxParam();
+
+        double u = findBestParam(currentPose);
+        Pose here = derivative(u);
+
+        double perParam = Math.hypot(here.x, here.y);
+
+        if (perParam <= 0) return 0;
+
+        double at = MathHelper.clamp(u + aheadDistance / perParam, 0, maxParam);
+        double bend = 0;
+
+        //a bend isn't worth slowing for if the robot can SAFELY cut across it
+        for (double window = allowedCut; window <= allowedCut * 64; window *= 2) {
+
+            double half = window / (2d * perParam);
+
+            double from = MathHelper.clamp(at - half, 0, maxParam), to = MathHelper.clamp(at + half, 0, maxParam);
+
+            if (to <= from) continue;
+
+            Pose leaving = derivative(from), arriving = derivative(to);
+
+            double span = (Math.hypot(leaving.x, leaving.y) + Math.hypot(arriving.x, arriving.y)) / 2d * (to - from);
+
+            if (span <= 0) continue;
+
+            double turn = Math.abs(MathHelper.normalizeAngleRad(
+                    FastMath.atan2(arriving.y, arriving.x) - FastMath.atan2(leaving.y, leaving.x)));
+
+            if (span * turn / 8d <= allowedCut) continue;
+
+            bend = Math.max(bend, turn / span);
+        }
+
+        return bend;
     }
 
     @Override

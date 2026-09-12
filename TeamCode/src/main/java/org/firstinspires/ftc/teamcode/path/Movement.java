@@ -10,7 +10,6 @@ public abstract class Movement {
 
     public abstract Pose getEndPose();
 
-    /// Clears any state latched while following, so the movement can be followed again.
     public void reset() {}
 
     private Replanner replanner;
@@ -41,6 +40,12 @@ public abstract class Movement {
         return 0;
     }
 
+    /// How much the path turns ahead. (0 means straight)
+    /// @param allowedCut How far the robot can drift before counting as a turn.
+    public double getCurvature(Pose currentPose, double aheadDistance, double allowedCut) {
+        return 0;
+    }
+
     /// Distance left to travel, used to decide when to start braking.
     public double getRemainingDistance(Pose currentPose) {
 
@@ -57,7 +62,7 @@ public abstract class Movement {
     protected static Pose toUnitVector(double x, double y) {
 
         double magnitude = Math.hypot(x, y);
-        return magnitude > 0 ? new Pose(x / magnitude, y / magnitude, 0) : new Pose(0, 0, 0);
+        return magnitude > 0 ? new Pose(x / magnitude, y / magnitude) : new Pose();
     }
 
     /// How far the robot currently is from the ideal path.

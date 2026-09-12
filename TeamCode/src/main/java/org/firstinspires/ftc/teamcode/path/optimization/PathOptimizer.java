@@ -23,7 +23,6 @@ public class PathOptimizer {
 
     private static final int SPEED_BUCKETS = 64;
 
-    //the body never moves further than the margin between two checks, so nothing can slip through one
     private static final double MIN_SWEEP_STEP = 0.4;
     private static final int MIN_SWEEP_SAMPLES = 240;
     private static final int MAX_SWEEP_SAMPLES = 6000;
@@ -39,6 +38,8 @@ public class PathOptimizer {
 
     private double margin = DEFAULT_MARGIN;
     private HeadingOp headingOp;
+
+    private double headingSwing = 1;
 
     public PathOptimizer(RobotFrame robotFrame) {
         this(robotFrame, null);
@@ -98,7 +99,20 @@ public class PathOptimizer {
 
         HermiteSpline built = new HermiteSpline(waypoints);
 
-        return headingOp == null ? built : built.setHeadingOp(headingOp);
+        if (headingOp != null) return built.setHeadingOp(headingOp);
+
+        double length = 0;
+
+        for (int i = 1; i < waypoints.length; i++)
+            length += Math.hypot(waypoints[i].x - waypoints[i - 1].x, waypoints[i].y - waypoints[i - 1].y);
+
+        //pointed along the path is both the quickest way to cover ground and the narrowest way
+        // through a gap, so the swings onto and off it are held to about a robot length, and
+        // dropped altogether on the second pass if that is what it takes to fit through
+        double swing = headingSwing * robotFrame.getRadius() * 2d / Math.max(length, 1e-9);
+
+        return built.setHeadingOp(HeadingOp.efficientHeading(
+                waypoints[0].heading, waypoints[waypoints.length - 1].heading, swing, swing));
     }
 
     private Movement plan(Pose startPose, Pose endPose, Obstacle[] obstacles) {
@@ -117,27 +131,29 @@ public class PathOptimizer {
         double outer = robotFrame.getRadius() + margin;
         double inner = Math.max(robotFrame.getInnerRadius(), 0.5) + margin;
 
-        //room to spare first, since a route with space is smoother and quicker to drive than a
-        // shorter one that hugs everything, then tighter tries only if nothing else gets through
         double[] radii = { outer, (outer + inner) / 2d, inner };
 
-        for (double radius : radii) {
+        for (double swing : new double[]{1, 0}) {
 
-            double[][] corners = field.route(radius, startPose, endPose, headingOp, mecanumProfile);
-            if (corners == null) continue;
+            headingSwing = swing;
 
-            HermiteSpline path = fit(corners, startPose, endPose, obstacles);
-            if (path != null) return path;
+            for (double radius : radii) {
 
-            //a second try with the corners walked into open ground, which is room the curve needs
-            path = fit(field.relax(corners, radius), startPose, endPose, obstacles);
-            if (path != null) return path;
+                double[][] corners = field.route(radius, startPose, endPose, headingOp, mecanumProfile);
+                if (corners == null) continue;
+
+                HermiteSpline path = fit(corners, startPose, endPose, obstacles);
+                if (path != null) return path;
+
+                //a second try with the corners walked into open ground, which is room the curve needs
+                path = fit(field.relax(corners, radius), startPose, endPose, obstacles);
+                if (path != null) return path;
+            }
         }
 
         return null;
     }
 
-    //grows the corner list until the spline itself, not just the corners, clears everything
     private HermiteSpline fit(double[][] corners, Pose startPose, Pose endPose, Obstacle[] obstacles) {
 
         ArrayList<double[]> points = new ArrayList<>();
@@ -162,7 +178,6 @@ public class PathOptimizer {
         return null;
     }
 
-    //the fewest corners that still clear everything, which is also the smoothest way round
     private HermiteSpline simplify(ArrayList<double[]> points, Pose startPose, Pose endPose, Obstacle[] obstacles) {
 
         HermiteSpline best = build(points, startPose, endPose);
@@ -188,9 +203,11 @@ public class PathOptimizer {
         }
 
         //a short stretch beside a long one makes the curve overshoot, so the stretches are evened out
+        double[][] traced = trace(best);
+
         for (double spacing : new double[]{EVEN_SPACING, EVEN_SPACING * 1.75, EVEN_SPACING * 3}) {
 
-            ArrayList<double[]> even = spread(points, spacing);
+            ArrayList<double[]> even = resample(traced, spacing);
             HermiteSpline smooth = build(even, startPose, endPose);
 
             if (firstHit(smooth, obstacles, walk(even)) < 0) return smooth;
@@ -199,25 +216,51 @@ public class PathOptimizer {
         return best;
     }
 
-    private ArrayList<double[]> spread(ArrayList<double[]> corners, double wanted) {
+    private double[][] trace(HermiteSpline path) {
+
+        final int fine = 400;
+
+        double[] x = new double[fine + 1], y = new double[fine + 1], along = new double[fine + 1];
+
+        for (int i = 0; i <= fine; i++) {
+
+            Pose point = path.sample((double) i / fine);
+
+            x[i] = point.x;
+            y[i] = point.y;
+
+            if (i > 0) along[i] = along[i - 1] + Math.hypot(x[i] - x[i - 1], y[i] - y[i - 1]);
+        }
+
+        return new double[][]{x, y, along};
+    }
+
+    private ArrayList<double[]> resample(double[][] traced, double wanted) {
+
+        //points follow the curve evenly preventing its shape from making loops
+
+        final double[] x = traced[0];
+        final double[] y = traced[1];
+        final double[] along = traced[2];
+
+        final int fine = along.length - 1;
+
+        double spacing = Math.max(wanted, along[fine] / (MAX_WAYPOINTS - 1));
+        int pieces = Math.max(1, (int) Math.round(along[fine] / spacing));
 
         ArrayList<double[]> points = new ArrayList<>();
 
-        double spacing = Math.max(wanted, walk(corners) / (MAX_WAYPOINTS - 1));
+        for (int k = 0, i = 0; k <= pieces; k++) {
 
-        for (int i = 0; i + 1 < corners.size(); i++) {
+            double reached = along[fine] * k / pieces;
 
-            double[] a = corners.get(i), b = corners.get(i + 1);
-            int pieces = Math.max(1, (int) Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / spacing));
+            while (i + 2 <= fine && along[i + 1] < reached) i++;
 
-            for (int k = 0; k < pieces; k++) {
+            double length = along[i + 1] - along[i];
+            double t = length > 0 ? (reached - along[i]) / length : 0;
 
-                double t = (double) k / pieces;
-                points.add(new double[]{a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t});
-            }
+            points.add(new double[]{x[i] + (x[i + 1] - x[i]) * t, y[i] + (y[i + 1] - y[i]) * t});
         }
-
-        points.add(corners.get(corners.size() - 1).clone());
 
         return points;
     }
@@ -246,7 +289,6 @@ public class PathOptimizer {
         return length;
     }
 
-    //moves the corner out a little so the curve can cut the turn
     private boolean push(ArrayList<double[]> points, double px, double py, Obstacle[] obstacles) {
 
         if (points.size() < 3) return false;
@@ -288,8 +330,9 @@ public class PathOptimizer {
         return best;
     }
 
-    //makes the closest stretch shorter, pulling the curve back toward the corners
     private boolean split(ArrayList<double[]> points, double px, double py) {
+
+        //makes the closest stretch shorter by pulling the curve toward the corners
 
         int nearest = -1;
         double nearestDistance = Double.MAX_VALUE;
@@ -307,7 +350,6 @@ public class PathOptimizer {
 
         if (nearest < 0) return false;
 
-        //the stray may be beside a corner rather than a stretch, so its neighbours are fair game too
         for (int reach = 0; reach < points.size(); reach++) {
 
             for (int side = 0; side < 2; side++) {
@@ -341,7 +383,7 @@ public class PathOptimizer {
             double t = (double) i / steps;
             Pose pose = path.sample(t);
 
-            //turning swings the corners further than the centre travels, so both are counted
+            //turning swings the corners further than the center travels so both are counted
             double swept = Math.hypot(pose.x - previous.x, pose.y - previous.y)
                     + robotFrame.getRadius() * Math.abs(MathHelper.normalizeAngleRad(pose.heading - previous.heading));
 
@@ -670,7 +712,6 @@ public class PathOptimizer {
             return table[MathHelper.clamp(index, 0, SPEED_BUCKETS)];
         }
 
-        /// Moves each corner toward more open space, giving the curve more room than a corner needs.
         double[][] relax(double[][] corners, double radius) {
 
             double[][] moved = new double[corners.length][];
@@ -711,8 +752,9 @@ public class PathOptimizer {
             return moved;
         }
 
-        // Keeps only the corners that are needed to connect the straight parts.
         private double[][] shortcut(ArrayList<double[]> raw, double radius) {
+
+            //keeps only the corners that are needed to connect the straight parts
 
             ArrayList<double[]> kept = new ArrayList<>();
             kept.add(raw.get(0));
@@ -729,7 +771,7 @@ public class PathOptimizer {
                 i = j;
             }
 
-            //corners a few inches apart only make the curve whip round, so they are merged
+            //if corners have too little gap between them, they're merged
             for (int k = kept.size() - 2; k > 0; k--) {
 
                 double[] here = kept.get(k), after = kept.get(k + 1);

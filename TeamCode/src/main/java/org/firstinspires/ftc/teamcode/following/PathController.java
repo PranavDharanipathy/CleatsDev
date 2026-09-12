@@ -27,6 +27,8 @@ public class PathController {
     /// Share of the wheels a rotation's position hold may take while the turn is braking.
     private static final double ROTATION_HOLD_BRAKE_AUTHORITY = 0.15;
 
+    private static final int CURVE_LOOKAHEAD_STEPS = 6;
+
     private final Chassis chassis;
     private final MotionConstraints motionConstraints;
     private final MecanumProfile mecanumProfile;
@@ -207,12 +209,17 @@ public class PathController {
 
             double alongCommand = 0;
 
-            if (tangent.x != 0 || tangent.y != 0)
-                alongCommand = axisCommand(
-                        movement.getRemainingDistance(pose),
-                        velocity.x * tangent.x + velocity.y * tangent.y,
-                        robotFrameAngle(tangent.x, tangent.y)
+            if (tangent.x != 0 || tangent.y != 0) {
+
+                double alongVelocity = velocity.x * tangent.x + velocity.y * tangent.y;
+                double alongAngle = robotFrameAngle(tangent.x, tangent.y);
+
+                //whichever of the two wants less throttle wins, so a bend can only ever slow it down
+                alongCommand = Math.min(
+                        axisCommand(movement.getRemainingDistance(pose), alongVelocity, alongAngle),
+                        curveCommand(movement, alongVelocity, alongAngle, robotFrameAngle(normalX, normalY))
                 );
+            }
 
             double crossCommand = axisCommand(
                     movement.getSignedCrossTrack(pose),
@@ -311,6 +318,60 @@ public class PathController {
         if (movingTowardTarget && Math.abs(error) <= stoppingDistance) return -Math.signum(closingVelocity);
 
         return Math.signum(error);
+    }
+
+    private double curveCommand(Movement movement, double alongVelocity, double alongAngle, double normalAngle) {
+
+        //a bend can only be held at v = sqrt(sideways grip / curvature), so the path ahead is
+        //checked for bends the robot couldn't still slow down for in time
+
+        if (alongVelocity <= 0) return 1;
+
+        final double grip = mecanumProfile.getMaxAcceleration(normalAngle);
+        final double cut = brakingModel.getMargin();
+        final double reach = brakingModel.getStoppingDistance(alongAngle, alongVelocity);
+        final double step = reach / CURVE_LOOKAHEAD_STEPS;
+
+        double command = 1;
+        double curvature = movement.getCurvature(pose, 0, cut);
+
+        for (int i = 0; i <= CURVE_LOOKAHEAD_STEPS; i++) {
+
+            double ahead = step * i;
+            double next = movement.getCurvature(pose, ahead + step, cut);
+
+            double allowed = cornerSpeed(curvature, step > 0 ? Math.abs(next - curvature) / step : 0, grip);
+
+            curvature = next;
+
+            if (alongVelocity <= allowed) continue;
+
+            //shedding speed costs the difference between the two stopping distances
+            if (reach - brakingModel.getStoppingDistance(alongAngle, allowed) >= ahead) return -1;
+
+            command = 0;
+        }
+
+        return command;
+    }
+
+    /*
+     * Twinkle twinkle little star,
+     * How I wonder what you are!
+     * Up-in-pathing-algorithm-land-I'm-feeling-very-happy-because-this-stuff-is-actually-so-revolutionary-and-I'm-so-excited!
+     */
+
+    private double cornerSpeed(double curvature, double curvatureRate, double grip) {
+
+        //uses grip, turning, and acceleration to keep the robot on track
+
+        if (curvature <= 0) return Double.MAX_VALUE;
+
+        double speed = Math.min(Math.sqrt(grip / curvature), motionConstraints.getVmaxH() / curvature);
+
+        if (curvatureRate <= 0) return speed;
+
+        return Math.min(speed, Math.sqrt(motionConstraints.getAmaxH() / curvatureRate));
     }
 
     private double headingCommand(double error, double angularVelocity) {
