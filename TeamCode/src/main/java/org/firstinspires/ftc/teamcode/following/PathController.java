@@ -25,7 +25,7 @@ public class PathController {
     }
 
     /// Share of the wheels a rotation's position hold may take while the turn is braking.
-    private static final double ROTATION_HOLD_BRAKE_AUTHORITY = 0.15;
+    private static final double DEFAULT_ROTATION_HOLD_AUTHORITY = 0.15;
 
     private static final int CURVE_LOOKAHEAD_STEPS = 6;
 
@@ -49,6 +49,8 @@ public class PathController {
     //translation and heading have independent LQR management
     private Mode translationMode, headingMode;
 
+    private double rotationHoldAuthority = DEFAULT_ROTATION_HOLD_AUTHORITY;
+
     private double previousTargetHeading;
     private boolean hasPreviousTargetHeading;
 
@@ -67,6 +69,18 @@ public class PathController {
 
         translationMode = Mode.TRANSIT;
         headingMode = Mode.TRANSIT;
+    }
+
+    /// Share of the wheels a rotation's position hold may take while the turn is braking.
+    /// @param share 0 leaves the whole drivetrain to the turn, 1 lets the hold fight it freely
+    public PathController setRotationHoldAuthority(double share) {
+
+        rotationHoldAuthority = MathHelper.clamp(share, 0, 1);
+        return this;
+    }
+
+    public double getRotationHoldAuthority() {
+        return rotationHoldAuthority;
     }
 
     /// Call once to start following a path.
@@ -252,9 +266,9 @@ public class PathController {
 
             double magnitude = Math.hypot(desiredForward, desiredStrafe);
 
-            if (magnitude > ROTATION_HOLD_BRAKE_AUTHORITY) {
-                desiredForward *= ROTATION_HOLD_BRAKE_AUTHORITY / magnitude;
-                desiredStrafe *= ROTATION_HOLD_BRAKE_AUTHORITY / magnitude;
+            if (magnitude > rotationHoldAuthority) {
+                desiredForward *= rotationHoldAuthority / magnitude;
+                desiredStrafe *= rotationHoldAuthority / magnitude;
             }
         }
 
@@ -355,15 +369,9 @@ public class PathController {
         return command;
     }
 
-    /*
-     * Twinkle twinkle little star,
-     * How I wonder what you are!
-     * Up-in-pathing-algorithm-land-I'm-feeling-very-happy-because-this-stuff-is-actually-so-revolutionary-and-I'm-so-excited!
-     */
-
+    //the three ways a bend runs out of robot, all measured: sideways grip holds it to the arc,
+    //and staying pointed along it costs turn rate to hold and turn acceleration to enter
     private double cornerSpeed(double curvature, double curvatureRate, double grip) {
-
-        //uses grip, turning, and acceleration to keep the robot on track
 
         if (curvature <= 0) return Double.MAX_VALUE;
 
