@@ -98,7 +98,7 @@ public class BrakingModel {
         }
 
         //efficiency, ends up being O(log n) instead of O(n)
-        int i = BinarySearch.firstGreaterOrEqual(speeds, speed);
+        int i = BinarySearch.INSTANCE.firstGreaterOrEqual(speeds, speed);
 
         double low = lameValueAt(i - 1, angle);
         double high = lameValueAt(i, angle);
@@ -122,7 +122,7 @@ public class BrakingModel {
         }
 
         //efficiency, ends up being O(log n) instead of O(n)
-        int i = BinarySearch.firstGreaterOrEqual(xs, x);
+        int i = BinarySearch.INSTANCE.firstGreaterOrEqual(xs, x);
 
         return ys[i - 1] + (ys[i] - ys[i - 1]) * (x - xs[i - 1]) / (xs[i] - xs[i - 1]);
     }

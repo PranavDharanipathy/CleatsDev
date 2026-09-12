@@ -1,27 +1,18 @@
-package org.firstinspires.ftc.teamcode.util;
+package org.firstinspires.ftc.teamcode.util
 
-public class BinarySearch {
+object BinarySearch {
 
-    private BinarySearch() {}
+    fun firstGreaterOrEqual(values: DoubleArray, target: Double): Int {
 
-    /**
-     * Returns the index of the first value >= target.
-     * Assumes values are sorted in ascending order.
-     */
-    public static int firstGreaterOrEqual(double[] values, double target) {
-
-        int low = 0;
-        int high = values.length - 1;
+        var low = 0
+        var high = values.lastIndex
 
         while (low < high) {
-            int mid = (low + high) >>> 1;
-
-            if (values[mid] >= target)
-                high = mid;
-            else
-                low = mid + 1;
+            val mid = (low + high) ushr 1
+            if (values[mid] >= target) high = mid
+            else low = mid + 1
         }
 
-        return low;
+        return low
     }
 }

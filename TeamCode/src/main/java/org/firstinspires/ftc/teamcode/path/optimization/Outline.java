@@ -4,12 +4,12 @@ import org.apache.commons.math3.util.FastMath;
 
 public class Outline {
 
-    final double[] x, y;
-    final int count;
+    public final double[] x, y;
+    public final int count;
 
-    final double minX, minY, maxX, maxY;
+    public final double minX, minY, maxX, maxY;
 
-    final double centerX, centerY, boundRadius;
+    public final double centerX, centerY, boundRadius;
 
     public Outline(CollisionPoint... points) {
 

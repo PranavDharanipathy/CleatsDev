@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.util;
 
-public class MiniHeap {
+public final class MiniHeap {
 
     private int[] node;
     private double[] key;

@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.util;
 
 import org.apache.commons.math3.util.FastMath;
 
-public class MathHelper {
+public final class MathHelper {
 
     //Captain America is the greatest avenger
 
