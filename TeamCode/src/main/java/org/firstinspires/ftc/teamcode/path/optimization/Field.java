@@ -120,13 +120,13 @@ public final class Field {
 
         if (startCell < 0 || endCell < 0) return null;
 
-        int[] cameFrom = search(startCell, endCell, radius, headingOp, profile, endPose);
+        int[] cameFrom = search(startCell, endCell, radius, headingOp, profile);
         if (cameFrom == null) return null;
 
         ArrayList<double[]> raw = new ArrayList<>();
 
         for (int node = endCell; node != -1; node = cameFrom[node]) {
-            raw.add(0, new double[]{originX + (node % nx) * cell, originY + ((double) node / nx) * cell});
+            raw.add(0, new double[]{originX + (node % nx) * cell, originY + (node / nx) /*integer division isn't a problem*/ * cell});
         }
 
         raw.set(0, new double[]{startPose.x, startPose.y});
@@ -159,7 +159,7 @@ public final class Field {
         return -1;
     }
 
-    private int[] search(int start, int goal, double radius, HeadingOp headingOp, MecanumProfile profile, Pose endPose) {
+    private int[] search(int start, int goal, double radius, HeadingOp headingOp, MecanumProfile profile) {
 
         double[] speeds = speedTable(profile);
         double bestSpeed = 0;
@@ -181,7 +181,7 @@ public final class Field {
         travelled[start] = 0;
         heap.push(start, 0);
 
-        double goalX = originX + (goal % nx) * cell, goalY = originY + ((double) goal / nx) * cell;
+        double goalX = originX + (goal % nx) * cell, goalY = originY + (goal / nx) /*integer division isn't a problem*/ * cell;
 
         while (!heap.isEmpty()) {
 
