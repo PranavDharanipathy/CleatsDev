@@ -50,7 +50,7 @@ public class PathOptimizer {
         this.mecanumProfile = mecanumProfile;
     }
 
-    /// Extra slack kept between the robot and every obstacle, in inches.
+    /// Extra slack kept between the robot and every obstacle in inches.
     public PathOptimizer setMargin(double margin) {
 
         this.margin = Math.max(0, margin);

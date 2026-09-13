@@ -7,6 +7,8 @@ import org.firstinspires.ftc.teamcode.following.chassis.Chassis;
 import org.firstinspires.ftc.teamcode.following.chassis.MecanumProfile;
 import org.firstinspires.ftc.teamcode.following.chassis.MotionConstraints;
 import org.firstinspires.ftc.teamcode.localization.FinalLocalizer;
+import org.firstinspires.ftc.teamcode.path.optimization.PathOptimizer;
+import org.firstinspires.ftc.teamcode.path.optimization.RobotFrame;
 import org.firstinspires.ftc.teamcode.util.KinematicState;
 import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
@@ -25,7 +27,6 @@ public class PathController implements KinematicState {
         TRANSIT, PRECISION
     }
 
-    /// Share of the wheels a rotation's position hold may take while the turn is braking.
     private static final double DEFAULT_ROTATION_HOLD_AUTHORITY = 0.15;
 
     private static final int CURVE_LOOKAHEAD_STEPS = 6;
@@ -496,6 +497,10 @@ public class PathController implements KinematicState {
     /// @return whether a maneuver is currently being followed
     public boolean isFollowing() {
         return currentManeuver != null && currentManeuver.isFollowing();
+    }
+
+    public PathOptimizer assemblePathOptimizer(RobotFrame robotFrame) {
+        return new PathOptimizer(robotFrame, mecanumProfile);
     }
 
     public double getX() {
