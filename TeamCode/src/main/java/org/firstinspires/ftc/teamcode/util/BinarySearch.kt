@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.util
 
 object BinarySearch {
 
+    @JvmStatic
     fun firstGreaterOrEqual(values: DoubleArray, target: Double): Int {
 
         var low = 0

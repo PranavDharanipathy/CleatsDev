@@ -126,7 +126,7 @@ public final class Field {
         ArrayList<double[]> raw = new ArrayList<>();
 
         for (int node = endCell; node != -1; node = cameFrom[node])
-            raw.add(0, new double[]{originX + (node % nx) * cell, originY + (node / nx) * cell});
+            raw.add(0, new double[]{originX + (node % nx) * cell, originY + ((double) node / nx) * cell});
 
         raw.set(0, new double[]{startPose.x, startPose.y});
         raw.set(raw.size() - 1, new double[]{endPose.x, endPose.y});
