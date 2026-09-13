@@ -19,7 +19,7 @@ public class DribblePathController implements Subsystem {
 
     public static DribblePathController getActive() {
 
-        if (active == null) throw new IllegalStateException("No DribblePathOptimizer has been built yet, make one before scheduling a FollowPath!");
+        if (active == null) throw new IllegalStateException("No DribblePathController has been built yet, make one before scheduling a FollowPath!");
 
         return active;
     }
@@ -33,6 +33,7 @@ public class DribblePathController implements Subsystem {
 
         pathController.update();
 
+        //PathController already zeroes on the loop a maneuver ends, this is just a guard
         if (!pathController.isFollowing()) pathController.getChassis().setDrivePowerBypassRamp(0, 0, 0);
     }
 }
