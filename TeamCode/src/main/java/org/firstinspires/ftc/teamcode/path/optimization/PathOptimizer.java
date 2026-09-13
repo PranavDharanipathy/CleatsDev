@@ -124,7 +124,10 @@ public class PathOptimizer {
         HermiteSpline direct = spline(startPose.copy(), endPose.copy());
         if (firstHit(direct, obstacles, Math.hypot(endPose.x - startPose.x, endPose.y - startPose.y)) < 0) return direct;
 
-        Field field = new Field(obstacles, startPose, endPose, robotFrame.getRadius() + margin);
+        Field field = new Field(
+                obstacles, startPose, endPose, robotFrame.getRadius() + margin,
+                MAX_CELLS_PER_SIDE, MIN_CORNER_GAP, SPEED_BUCKETS, TARGET_CELL
+        );
 
         double outer = robotFrame.getRadius() + margin;
         double inner = Math.max(robotFrame.getInnerRadius(), 0.5) + margin;

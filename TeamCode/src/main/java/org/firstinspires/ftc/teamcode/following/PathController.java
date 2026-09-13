@@ -7,13 +7,14 @@ import org.firstinspires.ftc.teamcode.following.chassis.Chassis;
 import org.firstinspires.ftc.teamcode.following.chassis.MecanumProfile;
 import org.firstinspires.ftc.teamcode.following.chassis.MotionConstraints;
 import org.firstinspires.ftc.teamcode.localization.FinalLocalizer;
+import org.firstinspires.ftc.teamcode.util.KinematicState;
 import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
 import org.firstinspires.ftc.teamcode.path.Maneuver;
 import org.firstinspires.ftc.teamcode.path.Movement;
 import org.firstinspires.ftc.teamcode.path.Rotation;
 
-public class PathController {
+public class PathController implements KinematicState {
 
     // Wait,
     // Run that back,
@@ -35,7 +36,7 @@ public class PathController {
     private final BrakingModel brakingModel;
 
     private final FinalLocalizer localizer;
-    private Pose pose = new Pose(), velocity = new Pose(), acceleration = new Pose();
+    private Pose pose, velocity, acceleration;
 
     private double dt;
 
@@ -69,6 +70,10 @@ public class PathController {
 
         translationMode = Mode.TRANSIT;
         headingMode = Mode.TRANSIT;
+
+        pose = new Pose();
+        velocity = new Pose();
+        acceleration = new Pose();
     }
 
     /// Share of the wheels a rotation's position hold may take while the turn is braking.
@@ -505,14 +510,17 @@ public class PathController {
         return pose.heading;
     }
 
+    @Override
     public Pose getPose() {
         return pose;
     }
 
+    @Override
     public Pose getVelocity() {
         return velocity;
     }
 
+    @Override
     public Pose getAcceleration() {
         return acceleration;
     }

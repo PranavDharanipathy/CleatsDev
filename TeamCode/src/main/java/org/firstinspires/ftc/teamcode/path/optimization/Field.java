@@ -1,10 +1,5 @@
 package org.firstinspires.ftc.teamcode.path.optimization;
 
-import static org.firstinspires.ftc.teamcode.path.optimization.PathOptimizer.MAX_CELLS_PER_SIDE;
-import static org.firstinspires.ftc.teamcode.path.optimization.PathOptimizer.MIN_CORNER_GAP;
-import static org.firstinspires.ftc.teamcode.path.optimization.PathOptimizer.SPEED_BUCKETS;
-import static org.firstinspires.ftc.teamcode.path.optimization.PathOptimizer.TARGET_CELL;
-
 import org.apache.commons.math3.util.FastMath;
 import org.firstinspires.ftc.teamcode.following.chassis.MecanumProfile;
 import org.firstinspires.ftc.teamcode.path.HeadingOp;
@@ -17,11 +12,24 @@ import java.util.Arrays;
 
 public final class Field {
 
-    final double originX, originY, cell;
-    final int nx, ny;
-    final double[] clearance;
+    private final int MAX_CELLS_PER_SIDE;
+    private final double MIN_CORNER_GAP;
+    private final int SPEED_BUCKETS;
+    private final double TARGET_CELL;
 
-    public Field(Obstacle[] obstacles, Pose startPose, Pose endPose, double reach) {
+    private final double originX, originY, cell;
+    private final int nx, ny;
+    private final double[] clearance;
+
+    public Field(
+            Obstacle[] obstacles, Pose startPose, Pose endPose, double reach,
+            int MAX_CELLS_PER_SIDE, double MIN_CORNER_GAP, int SPEED_BUCKETS, double TARGET_CELL
+    ) {
+
+        this.MAX_CELLS_PER_SIDE = MAX_CELLS_PER_SIDE;
+        this.MIN_CORNER_GAP = MIN_CORNER_GAP;
+        this.SPEED_BUCKETS = SPEED_BUCKETS;
+        this.TARGET_CELL = TARGET_CELL;
 
         double minX = Math.min(startPose.x, endPose.x), maxX = Math.max(startPose.x, endPose.x);
         double minY = Math.min(startPose.y, endPose.y), maxY = Math.max(startPose.y, endPose.y);
@@ -247,7 +255,7 @@ public final class Field {
         return table;
     }
 
-    private static double lookUp(double[] table, double angle) {
+    private double lookUp(double[] table, double angle) {
 
         double folded = Math.abs(MathHelper.normalizeAngleRad(angle));
         if (folded > Math.PI / 2d) folded = Math.PI - folded;

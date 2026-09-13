@@ -1,9 +1,10 @@
 package org.firstinspires.ftc.teamcode.localization;
 
+import org.firstinspires.ftc.teamcode.util.KinematicState;
 import org.firstinspires.ftc.teamcode.util.NoiseKalmanFilter;
 import org.firstinspires.ftc.teamcode.util.Pose;
 
-public class FinalLocalizer {
+public class FinalLocalizer implements KinematicState {
 
     // heh heh heh heh, SIUUUUUUUUUUUUUUUUUUUUUU!!!
 
@@ -106,14 +107,17 @@ public class FinalLocalizer {
         return deltaTime;
     }
 
+    @Override
     public Pose getPose() {
         return pose;
     }
 
+    @Override
     public Pose getVelocity() {
         return velocity;
     }
 
+    @Override
     public Pose getAcceleration() {
         return acceleration;
     }
