@@ -1,8 +1,6 @@
 repositories {
     mavenCentral()
     google() // Needed for androidx
-
-    maven { url = 'https://maven.brott.dev/' }
 }
 
 dependencies {
@@ -17,6 +15,4 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.2.0'
 
     implementation 'org.apache.commons:commons-math3:3.6.1'
-
-    implementation 'com.acmerobotics.dashboard:dashboard:0.6.0'
 }
