@@ -284,9 +284,15 @@ public abstract class Curve extends Movement {
     }
 
     @Override
-    public boolean isComplete(Pose currentPose) {
+    public boolean isComplete(Pose currentPose, Pose currentVelocity) {
 
         if (!positionReached(currentPose)) return false;
+
+        //a path that ends while the robot is still moving will end up having
+        // the robot provide a pose that it's going to leave
+        if (COMPLETION_SPEED_EPSILON > 0 && Math.hypot(currentVelocity.x, currentVelocity.y) >= COMPLETION_SPEED_EPSILON) return false;
+        if (COMPLETION_ANGULAR_SPEED_EPSILON > 0 && Math.abs(currentVelocity.heading) >= COMPLETION_ANGULAR_SPEED_EPSILON) return false;
+        // ^ ignore the warning above ^
 
         double headingError = MathHelper.normalizeAngleRad(currentPose.heading - getEndPose().heading);
         return Math.abs(headingError) < COMPLETION_HEADING_EPSILON;

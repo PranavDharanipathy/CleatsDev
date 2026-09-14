@@ -149,7 +149,7 @@ public class PathController implements KinematicState {
 
         if (currentManeuver == null || !currentManeuver.isFollowing()) return;
 
-        Movement movement = currentManeuver.update(pose, precisionModeThresholds.getEntryPositionDistance(), dt);
+        Movement movement = currentManeuver.update(pose, velocity, precisionModeThresholds.getEntryPositionDistance(), dt);
 
         if (movement == null) {
 

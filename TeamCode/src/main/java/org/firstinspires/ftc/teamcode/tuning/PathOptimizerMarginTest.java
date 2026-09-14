@@ -27,7 +27,6 @@ public class PathOptimizerMarginTest extends LinearOpMode {
 
         pc = Constants.getPathController(hardwareMap);
 
-        telemetry.addLine("PathOptimizer margin.");
         telemetry.addLine("Clear a " + ((int) (SIZE * 1.5)) + " inch square in front and to the left of the robot.");
         telemetry.addLine("The robot will drive in four shapes and tell you how far it moved away from the line.");
         telemetry.update();

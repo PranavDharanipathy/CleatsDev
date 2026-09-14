@@ -70,9 +70,13 @@ public abstract class Rotation extends Movement {
     }
 
     @Override
-    public boolean isComplete(Pose currentPose) {
+    public boolean isComplete(Pose currentPose, Pose currentVelocity) {
 
         track(currentPose);
+
+        //a path that ends while the robot is still turning will end up having
+        // the robot provide a pose that it's going to leave
+        if (COMPLETION_ANGULAR_SPEED_EPSILON > 0 && Math.abs(currentVelocity.heading) >= COMPLETION_ANGULAR_SPEED_EPSILON) return false;
 
         return Math.abs(getRemainingRotation()) < COMPLETION_HEADING_EPSILON;
     }

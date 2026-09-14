@@ -4,9 +4,14 @@ import org.firstinspires.ftc.teamcode.util.Pose;
 
 public abstract class Movement {
 
+    //0 turns the gate off (measured by CompletionSpeedTest)
+    protected static final double COMPLETION_SPEED_EPSILON = 0;
+
+    protected static final double COMPLETION_ANGULAR_SPEED_EPSILON = 0;
+
     public abstract Pose getTarget(Pose currentPose);
 
-    public abstract boolean isComplete(Pose currentPose);
+    public abstract boolean isComplete(Pose currentPose, Pose currentVelocity);
 
     public abstract Pose getEndPose();
 

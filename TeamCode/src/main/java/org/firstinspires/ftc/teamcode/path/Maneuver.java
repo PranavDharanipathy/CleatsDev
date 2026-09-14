@@ -114,7 +114,7 @@ public class Maneuver {
     }
 
     /// Advances the chain and returns the movement to drive, or null once nothing is left.
-    public Movement update(Pose currentPose, double handoffDistance, double dt) {
+    public Movement update(Pose currentPose, Pose currentVelocity, double handoffDistance, double dt) {
 
         lastPose = currentPose;
 
@@ -142,7 +142,7 @@ public class Maneuver {
         double remaining = step.movement.getRemainingDistance(currentPose);
 
         boolean movementComplete = settles
-                ? step.movement.isComplete(currentPose)
+                ? step.movement.isComplete(currentPose, currentVelocity)
                 : remaining <= handoffDistance;
 
         if (step.event != null) step.event.poll(step.progress(currentPose), step.travelled(currentPose), remaining, movementComplete);
