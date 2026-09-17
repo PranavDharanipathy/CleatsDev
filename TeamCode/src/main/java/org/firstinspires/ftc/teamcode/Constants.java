@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -12,10 +13,9 @@ import org.firstinspires.ftc.teamcode.following.chassis.MotionConstraints;
 import org.firstinspires.ftc.teamcode.following.config.ChassisMotorDirectionsConfig;
 import org.firstinspires.ftc.teamcode.following.config.ChassisMotorNamesConfig;
 import org.firstinspires.ftc.teamcode.following.config.FinalLocalizerNKFConfig;
-import org.firstinspires.ftc.teamcode.localization.Encoder;
 import org.firstinspires.ftc.teamcode.localization.Odometer;
-import org.firstinspires.ftc.teamcode.localization.localizers.DriveEncoderAttributes;
-import org.firstinspires.ftc.teamcode.localization.localizers.DriveEncoderLocalizer;
+import org.firstinspires.ftc.teamcode.localization.localizers.PinpointAttributes;
+import org.firstinspires.ftc.teamcode.localization.localizers.PinpointLocalizer;
 
 public class Constants {
 
@@ -32,33 +32,29 @@ public class Constants {
                 )
                 .chassisMotorNamesConfig(
                         new ChassisMotorNamesConfig(
-                                "left_front",
-                                "right_front",
-                                "left_back",
-                                "right_back"
+                                "fl",
+                                "fr",
+                                "bl",
+                                "br"
                         )
                 )
-                .localizer(() -> new DriveEncoderLocalizer(
+                .localizer(() -> new PinpointLocalizer(
                         hardwareMap,
-                        new DriveEncoderAttributes(
-                                "left_front",
-                                "right_front",
-                                "left_back",
-                                "right_back",
-                                Encoder.Direction.REVERSE,
-                                Encoder.Direction.FORWARD,
-                                Encoder.Direction.REVERSE,
-                                Encoder.Direction.FORWARD,
-                                16.5,21,
-                                Odometer.createGobildaSwingArmPod()
+                        new PinpointAttributes(
+                                "pinpoint",
+                                -83.57,
+                                19.73,
+                                GoBildaPinpointDriver.EncoderDirection.FORWARD,
+                                GoBildaPinpointDriver.EncoderDirection.REVERSED,
+                                Odometer.createGobildaFourBarPod()
                         )
                 ))
-                .velocityXNKFParams(new FinalLocalizerNKFConfig(1, 1, 1))
-                .velocityYNKFParams(new FinalLocalizerNKFConfig(1, 1, 1))
-                .velocityHeadingNKFParams(new FinalLocalizerNKFConfig(1, 1, 1))
-                .accelerationXNKFParams(new FinalLocalizerNKFConfig(1, 1, 1))
-                .accelerationYNKFParams(new FinalLocalizerNKFConfig(1, 1, 1))
-                .accelerationHeadingNKFParams(new FinalLocalizerNKFConfig(1, 1, 1))
+                .velocityXNKFParams(new FinalLocalizerNKFConfig(1, 0, 1))
+                .velocityYNKFParams(new FinalLocalizerNKFConfig(1, 0, 1))
+                .velocityHeadingNKFParams(new FinalLocalizerNKFConfig(1, 0, 1))
+                .accelerationXNKFParams(new FinalLocalizerNKFConfig(1, 0, 1))
+                .accelerationYNKFParams(new FinalLocalizerNKFConfig(1, 0, 1))
+                .accelerationHeadingNKFParams(new FinalLocalizerNKFConfig(1, 0, 1))
                 .motionConstraints(
                         new MotionConstraints(
                                 0, 0, 0, 0,

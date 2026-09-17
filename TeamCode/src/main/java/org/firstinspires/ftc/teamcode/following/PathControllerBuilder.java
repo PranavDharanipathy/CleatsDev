@@ -34,7 +34,17 @@ public class PathControllerBuilder {
     private PrecisionModeThresholds precisionModeThresholds;
 
     public PathControllerBuilder(HardwareMap hardwareMap) {
+
         this.hardwareMap = hardwareMap;
+
+        velocityXConfig = new FinalLocalizerNKFConfig(1,0,1);
+        velocityYConfig = new FinalLocalizerNKFConfig(1,0,1);
+        velocityHeadingConfig = new FinalLocalizerNKFConfig(1,0,1);
+
+        accelerationXConfig = new FinalLocalizerNKFConfig(1,0,1);
+        accelerationYConfig = new FinalLocalizerNKFConfig(1,0,1);
+        accelerationHeadingConfig = new FinalLocalizerNKFConfig(1,0,1);
+
     }
 
     public PathControllerBuilder chassisMotorNamesConfig(ChassisMotorNamesConfig config) {

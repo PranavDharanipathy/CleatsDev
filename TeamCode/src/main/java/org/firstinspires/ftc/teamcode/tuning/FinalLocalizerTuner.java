@@ -18,7 +18,7 @@ public class FinalLocalizerTuner extends OpMode {
 
     public static int STAGE = 1;
 
-    public static double Q = 1, R = 1, OUTLIER_THRESHOLD_MULTIPLIER = 1;
+    public static double Q = 1, R = 0, OUTLIER_THRESHOLD_MULTIPLIER = 1;
 
     private Chassis chassis;
     private FinalLocalizer finalLocalizer;
@@ -33,7 +33,7 @@ public class FinalLocalizerTuner extends OpMode {
         PathController pc = Constants.getPathController(hardwareMap);
 
         chassis = pc.getChassis();
-        finalLocalizer = new FinalLocalizer(pc.getFinalLocalizer().getLocalizer()); //custom copy with same localizer
+        finalLocalizer = new FinalLocalizer(pc.getFinalLocalizer().getLocalizer(), true); //custom copy with same localizer
 
         //default values
         double[] defaultParams = {Q, R, OUTLIER_THRESHOLD_MULTIPLIER};

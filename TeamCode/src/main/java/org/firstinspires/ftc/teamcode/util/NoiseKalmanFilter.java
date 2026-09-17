@@ -37,6 +37,8 @@ public class NoiseKalmanFilter {
         this.outlierThresholdMultiplier = outlierThresholdMultiplier;
 
         areParametersSet = true;
+
+        isBeingTuned = false;
     }
 
     /// If and when discontinuities occur in data, the kalman filter must be reset.
@@ -49,11 +51,22 @@ public class NoiseKalmanFilter {
         p = 0;
     }
 
+    private boolean isBeingTuned;
+
+    public void setTuning(boolean isBeingTuned) {
+        this.isBeingTuned = isBeingTuned;
+    }
+
     private double prevTime, currTime, startTime;
 
     public void update(double data, double providedDt) {
 
         if (!areParametersSet) throw new RuntimeException("Parameters weren't set!");
+
+        if (!isBeingTuned && noKF()) {
+            filteredData = data;
+            return;
+        }
 
         double dt;
 
@@ -101,8 +114,8 @@ public class NoiseKalmanFilter {
         p *= (1 - kalmanGain);
     }
 
-    public void update(double data) {
-        update(data, 0);
+    private boolean noKF() {
+        return q == 1 && r == 0 && outlierThresholdMultiplier == 1;
     }
 
     public double getOutput() {

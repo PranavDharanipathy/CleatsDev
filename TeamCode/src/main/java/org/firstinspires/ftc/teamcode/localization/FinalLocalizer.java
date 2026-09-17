@@ -17,7 +17,7 @@ public class FinalLocalizer implements KinematicState {
     public final NoiseKalmanFilter velocityX, velocityY, velocityHeading;
     public final NoiseKalmanFilter accelerationX, accelerationY, accelerationHeading;
 
-    public FinalLocalizer(Localizer localizer) {
+    public FinalLocalizer(Localizer localizer, boolean isBeingTuned) {
 
         pose = new Pose(0,0,0);
         velocity = new Pose(0,0,0);
@@ -39,6 +39,21 @@ public class FinalLocalizer implements KinematicState {
         accelerationHeading = new NoiseKalmanFilter(true);
 
         areParametersSet = false;
+
+        if (isBeingTuned) {
+
+            velocityX.setTuning(true);
+            velocityY.setTuning(true);
+            velocityHeading.setTuning(true);
+
+            accelerationX.setTuning(true);
+            accelerationY.setTuning(true);
+            accelerationHeading.setTuning(true);
+        }
+    }
+
+    public FinalLocalizer(Localizer localizer) {
+        this (localizer, false);
     }
 
     /// Params are provided as "new double[] {q, r, outlierThresholdMultiplier}"
