@@ -70,7 +70,6 @@ public class Constants {
                                 new double[] {2, 4, 6, 8},
                                 new double[] {0, 0, 0, 0},
                                 0,
-                                0,
                                 0
                 ))
                 .poseLQRController(() -> new PoseLQRController(

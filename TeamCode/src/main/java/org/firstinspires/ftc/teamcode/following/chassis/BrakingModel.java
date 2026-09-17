@@ -13,7 +13,6 @@ public class BrakingModel {
     private final double[] angularSpeeds;
     private final double[] angularDistances;
 
-    private final double latency;
     private final double margin;
     private final double angularMargin;
 
@@ -23,8 +22,7 @@ public class BrakingModel {
     /// @param diagonalDistances stopping distances recorded at each speed while moving diagonally
     /// @param angularSpeeds ascending test speeds in radians per second
     /// @param angularDistances stopping angles recorded at each angular speed
-    /// @param latency extra pose-estimate delay, in seconds, beyond what is already accounted for in the tables
-    /// @param margin amount of slack, in inches, used to determine when an axis is considered settled
+    /// @param margin amount of slack in inches used to determine when an axis is considered settled
     /// @param angularMargin same slack as margin, but measured in radians
     public BrakingModel(
             double[] speeds,
@@ -33,7 +31,6 @@ public class BrakingModel {
             double[] diagonalDistances,
             double[] angularSpeeds,
             double[] angularDistances,
-            double latency,
             double margin,
             double angularMargin
     ) {
@@ -54,7 +51,6 @@ public class BrakingModel {
         this.angularSpeeds = angularSpeeds;
         this.angularDistances = angularDistances;
 
-        this.latency = latency;
         this.margin = margin;
         this.angularMargin = angularMargin;
 
@@ -71,7 +67,7 @@ public class BrakingModel {
 
         if (speed <= 0) return 0;
 
-        return interpolateDirectional(angle, speed) + speed * latency;
+        return interpolateDirectional(angle, speed);
     }
 
     public double getAngularStoppingDistance(double angularSpeed) {
@@ -80,7 +76,7 @@ public class BrakingModel {
 
         if (angularSpeed <= 0) return 0;
 
-        return interpolate(angularSpeeds, angularDistances, angularSpeed) + angularSpeed * latency;
+        return interpolate(angularSpeeds, angularDistances, angularSpeed);
     }
 
     private double interpolateDirectional(double angle, double speed) {
@@ -98,7 +94,7 @@ public class BrakingModel {
         }
 
         //efficiency, ends up being O(log n) instead of O(n)
-        int i = BinarySearch.INSTANCE.firstGreaterOrEqual(speeds, speed);
+        int i = BinarySearch.firstGreaterOrEqual(speeds, speed);
 
         double low = lameValueAt(i - 1, angle);
         double high = lameValueAt(i, angle);
@@ -122,13 +118,9 @@ public class BrakingModel {
         }
 
         //efficiency, ends up being O(log n) instead of O(n)
-        int i = BinarySearch.INSTANCE.firstGreaterOrEqual(xs, x);
+        int i = BinarySearch.firstGreaterOrEqual(xs, x);
 
         return ys[i - 1] + (ys[i] - ys[i - 1]) * (x - xs[i - 1]) / (xs[i] - xs[i - 1]);
-    }
-
-    public double getLatency() {
-        return latency;
     }
 
     public double getMargin() {
