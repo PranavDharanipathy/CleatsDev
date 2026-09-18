@@ -25,7 +25,7 @@ public class PlaymakerWriter {
 
         out.append("import com.qualcomm.robotcore.eventloop.opmode.Autonomous;\n\n");
 
-        out.append("import org.firstinspires.ftc.teamcode.playmaker.Playmaker;\n");
+        out.append("import org.firstinspires.ftc.teamcode.playmaker.markers.Playmaker;\n");
 
         if ("PlaymakerOpMode".equals(superName)) {
             out.append("import org.firstinspires.ftc.teamcode.playmaker.PlaymakerOpMode;\n");

@@ -13,6 +13,8 @@ import org.firstinspires.ftc.teamcode.path.Movement;
 import org.firstinspires.ftc.teamcode.path.TurnTo;
 import org.firstinspires.ftc.teamcode.util.Pose;
 
+import java.lang.reflect.Constructor;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,6 +28,8 @@ public class PlaymakerLoader {
     private final Map<String, PlaymakerAction> actions;
 
     private final Map<String, PlaymakerNodeType> types = new LinkedHashMap<>();
+
+    private ClassLoader classLoader = PlaymakerLoader.class.getClassLoader();
 
     public PlaymakerLoader() {
         this(PlaymakerActions.discover());
@@ -43,6 +47,8 @@ public class PlaymakerLoader {
         addType("delay", node -> new Delay(node.number("seconds")));
         addType("action", this::action);
 
+        addType("command", this::command);
+
         addType("path", node -> new FollowPath(movement(node)));
         addType("turn", node -> new FollowPath(movement(node)));
     }
@@ -50,6 +56,14 @@ public class PlaymakerLoader {
     public PlaymakerLoader addType(String type, PlaymakerNodeType factory) {
 
         types.put(type, factory);
+
+        return this;
+    }
+
+    /// Hot reloaded commands live in the auto's own class loader
+    public PlaymakerLoader setClassLoader(ClassLoader classLoader) {
+
+        this.classLoader = classLoader;
 
         return this;
     }
@@ -100,6 +114,54 @@ public class PlaymakerLoader {
         return factory.build(node);
     }
 
+    private Command command(PlaymakerNode node) {
+
+        String name = node.string("class");
+
+        Class<?> type;
+
+        try {
+            type = Class.forName(name, true, classLoader);
+        }
+        catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Playmaker cannot find the command class " + name, e);
+        }
+
+        if (!Command.class.isAssignableFrom(type)) throw new IllegalArgumentException(name + " is not a Command");
+
+        List<Object> args = node.has("args") ? node.list("args") : new ArrayList<>();
+
+        Command[] children = node.has("children") ? node.children() : null;
+
+        for (Constructor<?> candidate : type.getConstructors()) {
+
+            Class<?>[] wants = candidate.getParameterTypes();
+
+            boolean tail = wants.length > 0 && wants[wants.length - 1] == Command[].class;
+
+            if (tail != (children != null)) continue;
+            if (wants.length - (tail ? 1 : 0) != args.size()) continue;
+
+            Object[] values = new Object[wants.length];
+
+            for (int i = 0; i < args.size(); i++) values[i] = coerce(name, wants[i], args.get(i));
+
+            if (tail) values[values.length - 1] = children;
+
+            try {
+                return (Command) candidate.newInstance(values);
+            }
+            catch (ReflectiveOperationException e) {
+                throw new IllegalStateException(name + " would not build", e);
+            }
+        }
+
+        throw new IllegalArgumentException(
+                "No public constructor on " + name + " takes " + args.size()
+                + " argument(s)" + (children != null ? " and Command[] children" : "")
+        );
+    }
+
     private Command deadline(Command[] all) {
 
         Command[] alongside = new Command[all.length - 1];
@@ -131,8 +193,10 @@ public class PlaymakerLoader {
         List<Object> given = node.has("args") ? node.list("args") : new ArrayList<>();
 
         if (given.size() != wants.length) {
-            throw new IllegalArgumentException(action.getName() + " takes " + wants.length
-                    + " argument(s), the auto supplies " + given.size());
+            throw new IllegalArgumentException(
+                    action.getName() + " takes " + wants.length
+                    + " argument(s), the auto supplies " + given.size()
+            );
         }
 
         Object[] out = new Object[wants.length];

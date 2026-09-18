@@ -12,7 +12,7 @@ public abstract class PlaymakerOpMode extends DribbleOpMode {
     @Override
     public void onStart() {
 
-        PlaymakerLoader loader = new PlaymakerLoader();
+        PlaymakerLoader loader = new PlaymakerLoader().setClassLoader(getClass().getClassLoader());
 
         configure(loader);
 

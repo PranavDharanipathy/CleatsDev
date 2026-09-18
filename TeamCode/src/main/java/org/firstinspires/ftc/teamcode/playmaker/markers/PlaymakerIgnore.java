@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.playmaker;
+package org.firstinspires.ftc.teamcode.playmaker.markers;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,8 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface PlaymakerSubsystem {
+@Target(ElementType.METHOD)
+public @interface PlaymakerIgnore {
 
-    String name() default "";
 }
