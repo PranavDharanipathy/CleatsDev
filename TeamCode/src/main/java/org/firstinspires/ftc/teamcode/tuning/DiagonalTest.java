@@ -52,6 +52,7 @@ public class DiagonalTest extends LinearOpMode {
         }
 
         double[] fit = ramp.fit();
+        double atBrake = ramp.speed();
 
         pc.update();
 
@@ -97,12 +98,12 @@ public class DiagonalTest extends LinearOpMode {
             return;
         }
 
-        double vmax = fit[0];
+        double dmax = distance > 0 ? atBrake * atBrake / (2 * distance) : 0;
 
         telemetry.addLine("=== DIAGONAL RESULTS ===");
-        telemetry.addData("amaxD (in/s^2)", fit[1]);
-        telemetry.addData("dmaxD (in/s^2)", distance > 0 ? vmax * vmax / (2 * distance) : 0);
-        telemetry.addData("vmaxD (in/s)", vmax);
+        telemetry.addData("amaxD (in/s^2)", Math.min(fit[1], dmax));
+        telemetry.addData("dmaxD (in/s^2)", dmax);
+        telemetry.addData("vmaxD (in/s)", fit[0]);
         telemetry.update();
 
         while (opModeIsActive()) ;

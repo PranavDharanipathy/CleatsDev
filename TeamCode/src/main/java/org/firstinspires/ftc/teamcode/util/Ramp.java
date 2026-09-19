@@ -4,7 +4,6 @@ import java.util.Arrays;
 
 public final class Ramp {
 
-    //only means something once the run has gone on this many time constants
     public double ENOUGH_TIME_CONSTANTS;
 
     public Ramp(double enoughTimeConstants) {
@@ -15,10 +14,15 @@ public final class Ramp {
         this (6);
     }
 
+    private static final int MOST_SAMPLES_READ = 256;
+
     private double[] times = new double[256];
     private double[] distances = new double[256];
 
     private int count;
+
+    private int solvedAt = -1;
+    private double[] solved;
 
     public void add(double time, double distance) {
 
@@ -34,81 +38,108 @@ public final class Ramp {
         count++;
     }
 
-    /// @return {vmax, amax}, or null while there is not enough of a straight part to read
+    /// @return {vmax, amax}, or null while there is not enough of the curve to read
     public double[] fit() {
 
-        if (count < 8) return null;
+        double[] found = solve();
 
-        double[] line = null;
-        double from = times[count - 1] / 2;
+        return found == null ? null : new double[] {found[0], found[0] / found[1]};
+    }
 
-        //the straight part starts a few time constants in which needs the fit itself to know
-        for (int i = 0; i < 4; i++) {
+    /// @return the speed the curve says it was doing at the last sample, which is the
+    /// speed braking actually starts from (0 if it can't be determined)
+    public double speed() {
 
-            double[] next = straightFrom(from);
+        double[] found = solve();
 
-            if (next == null) break;
-
-            line = next;
-
-            double tau = -line[1] / line[0];
-
-            if (tau <= 0 || 4 * tau >= times[count - 1]) break;
-
-            from = 4 * tau;
-        }
-
-        if (line == null || line[0] <= 0 || line[1] >= 0) return null;
-
-        return new double[] {line[0], -line[0] * line[0] / line[1]};
+        return found == null ? 0 : found[0] * (1 - Math.exp(-times[count - 1] / found[1]));
     }
 
     /// @return how many time constants long the run is (0 if it can't be determined)
     public double timeConstants() {
 
-        double[] line = count < 8 ? null : straightFrom(times[count - 1] / 2);
+        double[] found = solve();
 
-        if (line == null || line[0] <= 0 || line[1] >= 0) return 0;
-
-        return times[count - 1] * line[0] / -line[1];
+        return found == null ? 0 : times[count - 1] / found[1];
     }
 
-    private double[] straightFrom(double from) {
+    private double[] solve() {
 
-        double sumTime = 0, sumDistance = 0;
-        int n = 0;
+        //vmax * (t - tau * (1 - e^-t/tau))
+        //exponential first-order modeling
 
-        for (int i = 0; i < count; i++) {
+        if (count == solvedAt) return solved;
 
-            if (times[i] < from) continue;
+        solvedAt = count;
+        solved = null;
 
-            sumTime += times[i];
-            sumDistance += distances[i];
+        if (count < 8 || times[count - 1] <= 0) return null;
 
-            n++;
+        double low = 0.02, high = 5;
+
+        double bestTau = -1, best = -1;
+
+        for (int i = 0; i <= 24; i++) {
+
+            double tau = low * Math.pow(high / low, i / 24d);
+            double[] at = atTau(tau);
+
+            if (at != null && at[1] > best) {
+
+                best = at[1];
+                bestTau = tau;
+            }
         }
 
-        if (n < 4) return null;
+        if (bestTau < 0) return null;
 
-        double meanTime = sumTime / n, meanDistance = sumDistance / n;
+        double from = bestTau / 1.6, to = bestTau * 1.6;
+        double golden = (Math.sqrt(5) - 1) / 2;
 
-        double spread = 0, together = 0;
+        for (int i = 0; i < 40; i++) {
 
-        for (int i = 0; i < count; i++) {
+            double left = to - golden * (to - from), right = from + golden * (to - from);
 
-            if (times[i] < from) continue;
+            double[] atLeft = atTau(left), atRight = atTau(right);
 
-            double offset = times[i] - meanTime;
+            if (atLeft == null || atRight == null) break;
 
-            spread += offset * offset;
-            together += offset * (distances[i] - meanDistance);
+            if (atLeft[1] > atRight[1]) to = right;
+            else from = left;
+        }
+
+        double tau = (from + to) / 2;
+        double[] at = atTau(tau);
+
+        if (at == null || at[0] <= 0 || tau <= 0) return null;
+
+        solved = new double[] {at[0], tau}; //{vmax, tau}
+
+        return solved;
+    }
+
+    private double[] atTau(double tau) {
+
+        int stride = Math.max(1, count / MOST_SAMPLES_READ);
+
+        double together = 0, spread = 0;
+
+        for (int i = 0; i < count; i += stride) {
+
+            double shape = times[i] - tau * (1 - Math.exp(-times[i] / tau));
+
+            together += distances[i] * shape;
+            spread += shape * shape;
         }
 
         if (spread <= 0) return null;
 
-        double slope = together / spread;
-
-        return new double[] {slope, meanDistance - slope * meanTime}; //{slope, intercept}
+        return new double[] {together / spread, together * together / spread};
     }
+
+    //Thank you Euler
+    //Thank you Legendre
+    //Thank you Gauss
+    //Thank you Kiefer (way too underrated)
 
 }

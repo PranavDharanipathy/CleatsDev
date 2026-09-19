@@ -54,6 +54,7 @@ public class HeadingTest extends LinearOpMode {
         }
 
         double[] fit = ramp.fit();
+        double atBrake = ramp.speed();
 
         double spin = Math.signum(rotated);
 
@@ -96,12 +97,12 @@ public class HeadingTest extends LinearOpMode {
             return;
         }
 
-        double vmax = fit[0];
+        double dmax = angle > 0 ? atBrake * atBrake / (2 * angle) : 0;
 
         telemetry.addLine("=== HEADING RESULTS ===");
-        telemetry.addData("amaxH (rad/s^2)", fit[1]);
-        telemetry.addData("dmaxH (rad/s^2)", angle > 0 ? vmax * vmax / (2 * angle) : 0);
-        telemetry.addData("vmaxH (rad/s)", vmax);
+        telemetry.addData("amaxH (rad/s^2)", Math.min(fit[1], dmax));
+        telemetry.addData("dmaxH (rad/s^2)", dmax);
+        telemetry.addData("vmaxH (rad/s)", fit[0]);
         telemetry.update();
 
         while (opModeIsActive()) ;
