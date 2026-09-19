@@ -41,7 +41,6 @@ public class PathOptimizerMarginTest extends LinearOpMode {
 
         for (int i = 0; i < names.length && opModeIsActive(); i++) {
 
-            //an interrupted shape runs again from wherever the robot was left
             do {
                 repositioned = false;
                 worst[i] = drive(names[i], shape(i));
@@ -151,7 +150,7 @@ public class PathOptimizerMarginTest extends LinearOpMode {
 
             pc.update();
 
-            pc.getChassis().driveFromJoystick(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+            pc.getChassis().driveFromJoystick(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
 
             telemetry.addLine("driving free, B when the robot is where you want it");
             telemetry.update();

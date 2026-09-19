@@ -23,15 +23,13 @@ public class BrakingModelTest extends LinearOpMode {
 
     public static double HEADROOM = 1.5;
 
-    private static final double STOPPED_SPEED = 1;
-    private static final double STOPPED_ANGULAR_SPEED = 0.15;
     private static final double MAX_LEG_TIME = 6;
-
-    private static final double MARGIN_DISTANCE = 24;
-    private static final double MARGIN_DEGREES = 90;
 
     private PathController pc;
     private Telemetry telemetry;
+
+    private double accelerateDistance;
+    private double accelerateAngle;
 
     @Override
     public void runOpMode() {
@@ -59,15 +57,21 @@ public class BrakingModelTest extends LinearOpMode {
         double[] angularSpeeds = new double[SAMPLES];
         double[] angular = new double[SAMPLES];
 
+        double marginDistance = 0, marginAngle = 0;
+
         for (int i = 0; i < SAMPLES && opModeIsActive(); i++) {
 
             speeds[i] = topSpeed * (i + 1) / SAMPLES;
             angularSpeeds[i] = topAngularSpeed * (i + 1) / SAMPLES;
 
             forward[i] = translationLeg(speeds[i], 1, 0, "forward");
+            marginDistance = accelerateDistance + forward[i];
+
             strafe[i] = translationLeg(speeds[i], 0, 1, "strafe");
             diagonal[i] = translationLeg(speeds[i], Math.sqrt(0.5), Math.sqrt(0.5), "diagonal");
+
             angular[i] = angularLeg(angularSpeeds[i]);
+            marginAngle = accelerateAngle + angular[i];
         }
 
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
@@ -78,8 +82,8 @@ public class BrakingModelTest extends LinearOpMode {
 
             BrakingModel model = new BrakingModel(speeds, forward, strafe, diagonal, angularSpeeds, angular, 0, 0);
 
-            margin = marginLeg(model) * HEADROOM;
-            angularMargin = angularMarginLeg(model) * HEADROOM;
+            margin = marginLeg(model, marginDistance) * HEADROOM;
+            angularMargin = angularMarginLeg(model, marginAngle) * HEADROOM;
         }
 
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
@@ -110,22 +114,41 @@ public class BrakingModelTest extends LinearOpMode {
 
         waitForA(name + " leg");
 
+        Pose accelerateStart = pc.getPose();
+
         double start = getRuntime();
+
+        double alongX = 0, alongY = 0;
 
         while (opModeIsActive() && getRuntime() - start < MAX_LEG_TIME) {
 
             pc.update();
 
             Pose velocity = pc.getVelocity();
-            if (Math.hypot(velocity.x, velocity.y) >= targetSpeed) break;
+            double speed = Math.hypot(velocity.x, velocity.y);
+
+            if (speed >= targetSpeed) {
+
+                alongX = velocity.x / speed;
+                alongY = velocity.y / speed;
+
+                break;
+            }
 
             pc.getChassis().setDrivePower(forwardPower, strafePower, 0, pc.getFinalLocalizer().getDeltaTime());
 
-            telemetry.addData(name + " accelerating", "%.2f / %.2f in/s", Math.hypot(velocity.x, velocity.y), targetSpeed);
+            telemetry.addData(name + " accelerating", "%.2f / %.2f in/s", speed, targetSpeed);
             telemetry.update();
         }
 
+        accelerateDistance = 0;
+
+        if (alongX == 0 && alongY == 0) return 0;
+
         Pose brakeStart = pc.getPose();
+
+        accelerateDistance = Math.hypot(brakeStart.x - accelerateStart.x, brakeStart.y - accelerateStart.y);
+
         double distance = 0;
         double brakeTime = getRuntime();
 
@@ -134,11 +157,12 @@ public class BrakingModelTest extends LinearOpMode {
             pc.update();
 
             Pose pose = pc.getPose();
-            Pose velocity = pc.getVelocity();
 
-            distance = Math.hypot(pose.x - brakeStart.x, pose.y - brakeStart.y);
+            double travelled = (pose.x - brakeStart.x) * alongX + (pose.y - brakeStart.y) * alongY;
 
-            if (Math.hypot(velocity.x, velocity.y) < STOPPED_SPEED) break;
+            if (travelled < distance) break;
+
+            distance = travelled;
 
             pc.getChassis().setDrivePower(-forwardPower, -strafePower, 0, pc.getFinalLocalizer().getDeltaTime());
 
@@ -156,19 +180,39 @@ public class BrakingModelTest extends LinearOpMode {
 
         double start = getRuntime();
 
+        double previous = pc.getHeading();
+        double accelerated = 0;
+        double spin = 0;
+
         while (opModeIsActive() && getRuntime() - start < MAX_LEG_TIME) {
 
             pc.update();
 
-            if (Math.abs(pc.getVelocity().heading) >= targetSpeed) break;
+            double heading = pc.getHeading();
+            accelerated += MathHelper.normalizeAngleRad(heading - previous);
+            previous = heading;
+
+            double angularVelocity = pc.getVelocity().heading;
+
+            if (Math.abs(angularVelocity) >= targetSpeed) {
+
+                spin = Math.signum(angularVelocity);
+                break;
+            }
 
             pc.getChassis().setDrivePower(0, 0, 1, pc.getFinalLocalizer().getDeltaTime());
 
-            telemetry.addData("turn accelerating", "%.2f / %.2f rad/s", pc.getVelocity().heading, targetSpeed);
+            telemetry.addData("turn accelerating", "%.2f / %.2f rad/s", angularVelocity, targetSpeed);
             telemetry.update();
         }
 
-        double previous = pc.getHeading();
+        accelerateAngle = 0;
+
+        if (spin == 0) return 0;
+
+        accelerateAngle = Math.abs(accelerated);
+
+        double rotated = 0;
         double turned = 0;
         double brakeTime = getRuntime();
 
@@ -177,23 +221,25 @@ public class BrakingModelTest extends LinearOpMode {
             pc.update();
 
             double heading = pc.getHeading();
-            turned += MathHelper.normalizeAngleRad(heading - previous);
+            rotated += MathHelper.normalizeAngleRad(heading - previous) * spin;
             previous = heading;
 
-            if (Math.abs(pc.getVelocity().heading) < STOPPED_ANGULAR_SPEED) break;
+            if (rotated < turned) break;
+
+            turned = rotated;
 
             pc.getChassis().setDrivePower(0, 0, -1, pc.getFinalLocalizer().getDeltaTime());
 
-            telemetry.addData("turn braking", "%.4f rad from %.2f rad/s", Math.abs(turned), targetSpeed);
+            telemetry.addData("turn braking", "%.4f rad from %.2f rad/s", turned, targetSpeed);
             telemetry.update();
         }
 
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
-        return Math.abs(turned);
+        return turned;
     }
 
     //margin is the bangbang's deadband
-    private double marginLeg(BrakingModel model) {
+    private double marginLeg(BrakingModel model, double marginDistance) {
 
         waitForA("margin leg");
 
@@ -212,7 +258,7 @@ public class BrakingModelTest extends LinearOpMode {
             pc.update();
 
             double travelled = (pc.getX() - start.x) * cos + (pc.getY() - start.y) * sin;
-            double error = MARGIN_DISTANCE - travelled;
+            double error = marginDistance - travelled;
 
             Pose velocity = pc.getVelocity();
             double closing = velocity.x * cos + velocity.y * sin;
@@ -245,11 +291,11 @@ public class BrakingModelTest extends LinearOpMode {
         return worst;
     }
 
-    private double angularMarginLeg(BrakingModel model) {
+    private double angularMarginLeg(BrakingModel model, double marginAngle) {
 
         waitForA("angular margin leg");
 
-        double target = pc.getHeading() + Math.toRadians(MARGIN_DEGREES);
+        double target = pc.getHeading() + marginAngle;
 
         double worst = 0;
         double until = 0;
@@ -296,7 +342,7 @@ public class BrakingModelTest extends LinearOpMode {
 
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
-        //a leg reads the pose before its first update, so it must not be the one from init
+        //we read pose even in init
         pc.update();
 
         while (opModeIsActive() && !gamepad1.a) {

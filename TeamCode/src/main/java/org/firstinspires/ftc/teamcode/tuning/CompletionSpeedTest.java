@@ -105,8 +105,7 @@ public class CompletionSpeedTest extends LinearOpMode {
 
             if (carried <= POSITION_TOLERANCE) break;
 
-            //coast grows roughly with the square of speed, so this lands just under rather
-            // than over the position tolerance
+            //to make sure that it lands just under rather the position tolerance
             speedEpsilon = gate * Math.sqrt(POSITION_TOLERANCE / carried);
         }
 
@@ -131,8 +130,10 @@ public class CompletionSpeedTest extends LinearOpMode {
 
         telemetry.addLine();
 
-        telemetry.addData("carried", format(carried, 3) + " in of " + POSITION_TOLERANCE
-                + ", " + format(Math.toDegrees(carriedAngle), 3) + " deg of " + HEADING_TOLERANCE_DEGREES);
+        telemetry.addData(
+                "carried", format(carried, 3) + " in of " + POSITION_TOLERANCE
+                + ", " + format(Math.toDegrees(carriedAngle), 3) + " deg of " + HEADING_TOLERANCE_DEGREES
+        );
         telemetry.addData("sampled up to", format(maxTestSpeed, 2) + " in/s, " + format(maxTestTurn, 2) + " rad/s");
         telemetry.addData("forward speeds", format(forwardSpeeds));
         telemetry.addData("forward coast", format(forward));
@@ -145,8 +146,6 @@ public class CompletionSpeedTest extends LinearOpMode {
         while (opModeIsActive()) ;
     }
 
-    //a fixed range won't work for every robot. Two coasts estimate the stopping
-    // distance, after which the real sweep is centered around that estimate.
     private double probeRange(double topSpeed, boolean angular, double tolerance) {
 
         double[] speeds = new double[2], carried = new double[2];
@@ -402,7 +401,7 @@ public class CompletionSpeedTest extends LinearOpMode {
 
             pc.update();
 
-            pc.getChassis().driveFromJoystick(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+            pc.getChassis().driveFromJoystick(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
 
             telemetry.addLine("driving free, B when the robot is where you want it");
             telemetry.update();

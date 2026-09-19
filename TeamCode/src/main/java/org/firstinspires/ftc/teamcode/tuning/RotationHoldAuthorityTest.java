@@ -46,10 +46,12 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
         home = pc.getPose().copy();
 
-        double[] meanHeading = new double[SHARES.length];
         double[] worstHeading = new double[SHARES.length];
         double[] meanLeftOff = new double[SHARES.length];
         double[] meanPushed = new double[SHARES.length];
+
+        //trials that were cut short cannot be used
+        int[] trials = new int[SHARES.length];
 
         for (int s = 0; s < SHARES.length && opModeIsActive(); s++) {
 
@@ -62,7 +64,7 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
                 double[] result;
 
-                //an interrupted trial runs again
+                //interrupted trials runs again
                 do {
                     repositioned = false;
                     result = trial(TURN_DEGREES * direction, shoveAt);
@@ -71,10 +73,11 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
                 if (result == null) break;
 
-                meanHeading[s] += result[0] / REPEATS;
+                trials[s]++;
+
                 worstHeading[s] = Math.max(worstHeading[s], result[0]);
-                meanLeftOff[s] += result[1] / REPEATS;
-                meanPushed[s] += result[2] / REPEATS;
+                meanLeftOff[s] += result[1];
+                meanPushed[s] += result[2];
 
                 telemetry.addLine("=== TRIAL ===   (B to reposition)");
                 telemetry.addData("share", SHARES[s]);
@@ -86,9 +89,15 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
                 returnTo();
             }
+
+            if (trials[s] > 0) {
+
+                meanLeftOff[s] /= trials[s];
+                meanPushed[s] /= trials[s];
+            }
         }
 
-        report(meanHeading, worstHeading, meanLeftOff, meanPushed);
+        report(worstHeading, meanLeftOff, meanPushed, trials);
 
         while (opModeIsActive()) ;
     }
@@ -114,7 +123,6 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
             if (reposition()) return null;
 
-            //straight after the controller, so this loop's command is the shove instead
             if (t > shoveAt && t < shoveAt + SHOVE_SECONDS) pc.getChassis().setDrivePowerBypassRamp(0, SHOVE_POWER, 0);
 
             pushed = Math.max(pushed, Math.hypot(pc.getX() - startedOn.x, pc.getY() - startedOn.y));
@@ -169,7 +177,7 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
             pc.update();
 
-            pc.getChassis().driveFromJoystick(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+            pc.getChassis().driveFromJoystick(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
 
             telemetry.addLine("driving free, B when the robot is where you want it");
             telemetry.update();
@@ -181,34 +189,57 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
-        //the trials return here between repeats, so where you left it is the new start spot
         pc.update();
         home = pc.getPose().copy();
 
         return true;
     }
 
-    private void report(double[] meanHeading, double[] worstHeading, double[] meanLeftOff, double[] meanPushed) {
+    private void report(double[] worstHeading, double[] meanLeftOff, double[] meanPushed, int[] trials) {
 
         double bestHold = Double.MAX_VALUE;
-        for (double held : meanLeftOff) bestHold = Math.min(bestHold, held);
+
+        for (int i = 0; i < SHARES.length; i++) {
+            if (trials[i] > 0) bestHold = Math.min(bestHold, meanLeftOff[i]);
+        }
 
         double allowedHeading = Math.toDegrees(pc.getBrakingModel().getAngularMargin());
 
         double pick = 0;
+        boolean found = false;
 
         for (int i = 0; i < SHARES.length; i++) {
 
+            if (trials[i] == 0) continue;
             if (meanLeftOff[i] > bestHold * 1.05) continue;
             if (worstHeading[i] > allowedHeading) continue;
 
             pick = SHARES[i];
+            found = true;
+
             break;
         }
 
         telemetry.addLine("=== ROTATION HOLD AUTHORITY ===");
         telemetry.addData("turn's own angular margin (deg)", allowedHeading);
+
+        if (!found) {
+
+            telemetry.addLine("No share held its heading inside that margin, so there is nothing to pick.");
+            telemetry.update();
+
+            return;
+        }
+
         telemetry.addData("ROTATION_HOLD_AUTHORITY", pick);
+
+        //the shove has to actually knock the robot off-path
+        if (trials[0] > 0 && meanLeftOff[0] <= bestHold * 1.05) {
+
+            telemetry.addLine("The shove never knocked the robot off, so holding position made no difference here.");
+            telemetry.addData("shove moved the robot (in)", meanPushed[0]);
+        }
+
         telemetry.update();
     }
 }

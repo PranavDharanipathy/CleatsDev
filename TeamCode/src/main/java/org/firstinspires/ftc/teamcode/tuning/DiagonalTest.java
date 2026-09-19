@@ -4,15 +4,15 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.following.PathController;
-import org.firstinspires.ftc.teamcode.util.Pose;
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.following.PathController;
+import org.firstinspires.ftc.teamcode.util.MathHelper;
+import org.firstinspires.ftc.teamcode.util.Pose;
+import org.firstinspires.ftc.teamcode.util.Ramp;
 
 //@Config
 @TeleOp(group = "Cleats Tuning")
 public class DiagonalTest extends LinearOpMode {
-
-    public static double DECEL_RAMP_DURATION = 2;
 
     private PathController pc;
 
@@ -21,14 +21,18 @@ public class DiagonalTest extends LinearOpMode {
 
         pc = Constants.getPathController(hardwareMap);
 
-        telemetry.addLine("Press A to begin braking.");
-        telemetry.addLine("The robot will strafe diagonally forward and right. Let the robot cruise for as long as possible before braking.");
+        telemetry.addLine("The robot will strafe diagonally forward and right. Cruise until it says A, then press A to begin braking.");
         telemetry.update();
 
         waitForStart();
 
-        double peakAccel = 0;
-        double peakDiagonalSpeed = 0;
+        pc.update();
+
+        Pose start = pc.getPose().copy();
+
+        Ramp ramp = new Ramp();
+
+        double begin = getRuntime();
 
         while (opModeIsActive() && !gamepad1.a) {
 
@@ -36,57 +40,69 @@ public class DiagonalTest extends LinearOpMode {
 
             pc.update();
 
-            Pose vel = pc.getFinalLocalizer().getVelocity();
-            Pose accel = pc.getFinalLocalizer().getAcceleration();
+            Pose pose = pc.getPose();
 
-            double accelMagnitude = Math.hypot(accel.x, accel.y);
-            double speed = Math.hypot(vel.x, vel.y);
+            ramp.add(getRuntime() - begin, Math.hypot(pose.x - start.x, pose.y - start.y));
 
-            peakAccel = Math.max(peakAccel, accelMagnitude);
-            peakDiagonalSpeed = Math.max(peakDiagonalSpeed, speed);
+            double constants = ramp.timeConstants();
 
-            telemetry.addData("measured accel", accelMagnitude);
-            telemetry.addData("peak accel so far", peakAccel);
-            telemetry.addData("peak speed so far", peakDiagonalSpeed);
+            telemetry.addData("cruised", "%.1f of %.1f time constants", constants, ramp.ENOUGH_TIME_CONSTANTS);
+            telemetry.addLine(constants >= ramp.ENOUGH_TIME_CONSTANTS ? "A to brake" : "keep cruising");
             telemetry.update();
         }
 
-        double decelStartTime = getRuntime();
-        double peakDecel = 0;
+        double[] fit = ramp.fit();
 
-        while (opModeIsActive()) {
+        pc.update();
 
-            double t = getRuntime() - decelStartTime;
-            if (t > DECEL_RAMP_DURATION) break;
+        Pose brakeStart = pc.getPose().copy();
 
-            double commandedPower = -t / DECEL_RAMP_DURATION;
-            pc.getChassis().setDrivePowerBypassRamp(commandedPower, commandedPower, 0);
+        double runX = brakeStart.x - start.x, runY = brakeStart.y - start.y;
+        double run = Math.hypot(runX, runY);
 
-            pc.update();
+        double distance = 0;
 
-            Pose pose = pc.getFinalLocalizer().getPose();
-            Pose vel = pc.getFinalLocalizer().getVelocity();
-            Pose accel = pc.getFinalLocalizer().getAcceleration();
+        if (run > 0) {
 
-            double accelMagnitude = Math.hypot(accel.x, accel.y);
-            peakDecel = Math.max(peakDecel, accelMagnitude);
+            double alongX = runX / run, alongY = runY / run;
 
-            double forward = vel.x * Math.cos(pose.heading) + vel.y * Math.sin(pose.heading);
-            double strafe = vel.x * Math.sin(pose.heading) - vel.y * Math.cos(pose.heading);
-            if (forward + strafe /*diagonal*/ < 0) break;
+            while (opModeIsActive()) {
 
-            telemetry.addData("decel commanded power", commandedPower);
-            telemetry.addData("measured decel", accelMagnitude);
-            telemetry.addData("peak decel so far", peakDecel);
-            telemetry.update();
+                pc.getChassis().setDrivePowerBypassRamp(-1, -1, 0);
+
+                pc.update();
+
+                Pose pose = pc.getPose();
+
+                //the stopping distance is the furthest it got, so it's done once it comes back
+                double travelled = (pose.x - brakeStart.x) * alongX + (pose.y - brakeStart.y) * alongY;
+
+                if (travelled < distance) break;
+
+                distance = travelled;
+
+                telemetry.addData("braking", "%.2f in", distance);
+                telemetry.update();
+            }
         }
 
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
+        if (fit == null) {
+
+            telemetry.addLine("The run never settled into a steady cruise, so there is nothing to read off it.");
+            telemetry.update();
+
+            while (opModeIsActive()) ;
+            return;
+        }
+
+        double vmax = fit[0];
+
         telemetry.addLine("=== DIAGONAL RESULTS ===");
-        telemetry.addData("amaxD (in/s^2)", peakAccel);
-        telemetry.addData("dmaxD (in/s^2)", peakDecel);
-        telemetry.addData("vmaxD (in/s)", peakDiagonalSpeed);
+        telemetry.addData("amaxD (in/s^2)", fit[1]);
+        telemetry.addData("dmaxD (in/s^2)", distance > 0 ? vmax * vmax / (2 * distance) : 0);
+        telemetry.addData("vmaxD (in/s)", vmax);
         telemetry.update();
 
         while (opModeIsActive()) ;

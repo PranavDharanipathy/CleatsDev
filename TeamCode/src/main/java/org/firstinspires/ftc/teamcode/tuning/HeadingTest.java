@@ -4,15 +4,14 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.following.PathController;
-import org.firstinspires.ftc.teamcode.util.Pose;
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.following.PathController;
+import org.firstinspires.ftc.teamcode.util.MathHelper;
+import org.firstinspires.ftc.teamcode.util.Ramp;
 
 //@Config
 @TeleOp(group = "Cleats Tuning")
 public class HeadingTest extends LinearOpMode {
-
-    public static double DECEL_RAMP_DURATION = 2;
 
     private PathController pc;
 
@@ -21,14 +20,19 @@ public class HeadingTest extends LinearOpMode {
 
         pc = Constants.getPathController(hardwareMap);
 
-        telemetry.addLine("Press A to begin braking.");
-        telemetry.addLine("The robot will spin clockwise. Let the robot reach full speed before braking.");
+        telemetry.addLine("The robot will spin in place. Let it spin until it says A, then press A to begin braking.");
         telemetry.update();
 
         waitForStart();
 
-        double peakAccel = 0;
-        double peakAngularSpeed = 0;
+        pc.update();
+
+        double previous = pc.getHeading();
+        double rotated = 0;
+
+        Ramp ramp = new Ramp();
+
+        double begin = getRuntime();
 
         while (opModeIsActive() && !gamepad1.a) {
 
@@ -36,54 +40,68 @@ public class HeadingTest extends LinearOpMode {
 
             pc.update();
 
-            Pose vel = pc.getFinalLocalizer().getVelocity();
-            Pose accel = pc.getFinalLocalizer().getAcceleration();
+            double heading = pc.getHeading();
+            rotated += MathHelper.normalizeAngleRad(heading - previous);
+            previous = heading;
 
-            double accelMagnitude = Math.abs(accel.heading);
-            double angularSpeed = Math.abs(vel.heading);
+            ramp.add(getRuntime() - begin, Math.abs(rotated));
 
-            peakAccel = Math.max(peakAccel, accelMagnitude);
-            peakAngularSpeed = Math.max(peakAngularSpeed, angularSpeed);
+            double constants = ramp.timeConstants();
 
-            telemetry.addData("measured accel", accelMagnitude);
-            telemetry.addData("peak accel so far", peakAccel);
-            telemetry.addData("peak angular speed so far", peakAngularSpeed);
+            telemetry.addData("spun", "%.1f of %.1f time constants", constants, ramp.ENOUGH_TIME_CONSTANTS);
+            telemetry.addLine(constants >= ramp.ENOUGH_TIME_CONSTANTS ? "A to brake" : "keep spinning");
             telemetry.update();
         }
 
-        double decelStartTime = getRuntime();
-        double peakDecel = 0;
+        double[] fit = ramp.fit();
 
-        while (opModeIsActive()) {
+        double spin = Math.signum(rotated);
 
-            double t = getRuntime() - decelStartTime;
-            if (t > DECEL_RAMP_DURATION) break;
+        double braked = 0;
+        double angle = 0;
 
-            double commandedPower = -t / DECEL_RAMP_DURATION;
-            pc.getChassis().setDrivePowerBypassRamp(0, 0, commandedPower);
+        if (spin != 0) {
 
             pc.update();
+            previous = pc.getHeading();
 
-            Pose vel = pc.getFinalLocalizer().getVelocity();
-            Pose accel = pc.getFinalLocalizer().getAcceleration();
+            while (opModeIsActive()) {
 
-            double accelMagnitude = Math.abs(accel.heading);
-            peakDecel = Math.max(peakDecel, accelMagnitude);
+                pc.getChassis().setDrivePowerBypassRamp(0, 0, -1);
 
-            if (vel.heading < 0) break;
+                pc.update();
 
-            telemetry.addData("decel commanded power", commandedPower);
-            telemetry.addData("measured decel", accelMagnitude);
-            telemetry.addData("peak decel so far", peakDecel);
-            telemetry.update();
+                double heading = pc.getHeading();
+                braked += MathHelper.normalizeAngleRad(heading - previous) * spin;
+                previous = heading;
+
+                //the stopping angle is the furthest it got, so it's done once it spins back
+                if (braked < angle) break;
+
+                angle = braked;
+
+                telemetry.addData("braking", "%.4f rad", angle);
+                telemetry.update();
+            }
         }
 
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
+        if (fit == null) {
+
+            telemetry.addLine("The spin never settled into a steady rate, so there is nothing to read off it.");
+            telemetry.update();
+
+            while (opModeIsActive()) ;
+            return;
+        }
+
+        double vmax = fit[0];
+
         telemetry.addLine("=== HEADING RESULTS ===");
-        telemetry.addData("amaxH (rad/s^2)", peakAccel);
-        telemetry.addData("dmaxH (rad/s^2)", peakDecel);
-        telemetry.addData("vmaxH (rad/s)", peakAngularSpeed);
+        telemetry.addData("amaxH (rad/s^2)", fit[1]);
+        telemetry.addData("dmaxH (rad/s^2)", angle > 0 ? vmax * vmax / (2 * angle) : 0);
+        telemetry.addData("vmaxH (rad/s)", vmax);
         telemetry.update();
 
         while (opModeIsActive()) ;

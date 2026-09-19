@@ -200,7 +200,7 @@ public class CompletionToleranceTest extends LinearOpMode {
 
             pc.update();
 
-            pc.getChassis().driveFromJoystick(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+            pc.getChassis().driveFromJoystick(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
 
             telemetry.addLine("driving free, B when the robot is where you want it");
             telemetry.update();
