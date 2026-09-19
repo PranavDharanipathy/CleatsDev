@@ -107,12 +107,15 @@ public class FinalLocalizer implements KinematicState {
         velocity = new Pose(velocityX.getOutput(), velocityY.getOutput(), velocityHeading.getOutput());
 
         //acceleration
-        Pose accelerationRaw = velocity.minus(prevVelocity).divideBy(deltaTime);
-        accelerationX.update(accelerationRaw.x, deltaTime);
-        accelerationY.update(accelerationRaw.y, deltaTime);
-        accelerationHeading.update(accelerationRaw.heading, deltaTime);
+        if (deltaTime > 0) {
 
-        acceleration = new Pose(accelerationX.getOutput(), accelerationY.getOutput(), accelerationHeading.getOutput());
+            Pose accelerationRaw = velocity.minus(prevVelocity).divideBy(deltaTime);
+            accelerationX.update(accelerationRaw.x, deltaTime);
+            accelerationY.update(accelerationRaw.y, deltaTime);
+            accelerationHeading.update(accelerationRaw.heading, deltaTime);
+
+            acceleration = new Pose(accelerationX.getOutput(), accelerationY.getOutput(), accelerationHeading.getOutput());
+        }
 
         prevVelocity = velocity;
         prevAcceleration = acceleration;

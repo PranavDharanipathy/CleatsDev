@@ -57,9 +57,9 @@ public class Constants {
                 .accelerationHeadingNKFParams(new FinalLocalizerNKFConfig(1, 0, 1))
                 .motionConstraints(
                         new MotionConstraints(
-                                0, 0, 0, 0,
-                                0, 0, 0, 0,
-                                0, 0, 0, 0
+                                63.3895, 54.1883, 45.1827, 5.2525,
+                                755.7823, 1822.542, 2148.4248, 73.3434,
+                                832.8535, 137.9856, 356.4688, 73.7074
                         )
                 )
                 .brakingModel(() -> new BrakingModel(

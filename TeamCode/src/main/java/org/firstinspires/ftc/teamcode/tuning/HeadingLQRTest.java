@@ -23,7 +23,7 @@ public class HeadingLQRTest extends LinearOpMode {
     public static double TEST_ANGLE_DEGREES = 30;
 
     //must stay well under TEST_ANGLE_DEGREES or the return leg exits immediately
-    private static final double ALREADY_CLOSE_THRESHOLD_HEADING = Math.toRadians(3);
+    private static final double ALREADY_CLOSE_THRESHOLD_HEADING = 0.0322;
     private static final double MAX_RETURN_TIME = 5;
 
     private PathController pc;

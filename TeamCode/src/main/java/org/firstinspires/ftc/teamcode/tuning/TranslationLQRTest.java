@@ -23,7 +23,7 @@ public class TranslationLQRTest extends LinearOpMode {
 
     public static double TEST_DISTANCE = 12; //inches
 
-    private static final double ALREADY_CLOSE_THRESHOLD_POSITION = 1; //inches
+    private static final double ALREADY_CLOSE_THRESHOLD_POSITION = 4.133; //inches
     private static final double MAX_RETURN_TIME = 5;
 
     private PathController pc;

@@ -18,13 +18,13 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
 
     private static final double SAMPLE_DURATION = 2;
 
-    //how many standard deviations of stationary noise count as already settled down,
+    //a standing robot's ticks never change, so the wobble only shows up against motion
+    private static final double CREEP_POWER = 0.25;
+    private static final double SPIN_UP_SECONDS = 0.5;
+
+    //how many standard deviations of noise count as already settled down,
     //this is an educated guess, not derived from data
     private static final double ALREADY_CLOSE_NOISE_MULTIPLIER = 30; //determined using three sigma rule
-
-    //minimums
-    private static final double MIN_ALREADY_CLOSE_THRESHOLD_POSITION = 1;
-    private static final double MIN_ALREADY_CLOSE_THRESHOLD_HEADING = Math.toRadians(3);
 
     private Telemetry telemetry;
 
@@ -37,60 +37,59 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
 
         telemetry = new MultipleTelemetry(super.telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        telemetry.addLine("Place the robot down and do not touch it.");
-        telemetry.addLine("Press start, the robot will not move.");
+        telemetry.addLine("Clear about 3 ft diagonally forward and to the right.");
+        telemetry.addLine("Press start, the robot will creep in a straight line and measure how far the localizer strays from it.");
         telemetry.update();
 
         waitForStart();
 
-        double avgX = 0, avgY = 0, avgHeading = 0;
-        double m2X = 0, m2Y = 0, m2Heading = 0;
+        Wobble x = new Wobble(), y = new Wobble(), heading = new Wobble();
 
         //heading is measured against the first sample, otherwise sitting near +/-180 wraps causing problems
         Double referenceHeading = null;
 
-        int count = 0;
-
         double startTime = getRuntime();
 
-        while (opModeIsActive() && getRuntime() - startTime < SAMPLE_DURATION) {
+        while (opModeIsActive() && getRuntime() - startTime < SPIN_UP_SECONDS + SAMPLE_DURATION) {
 
             pc.update();
-            pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
+            pc.getChassis().setDrivePowerBypassRamp(CREEP_POWER, CREEP_POWER, 0);
+
+            double t = getRuntime() - startTime;
+
+            //the first moments are acceleration, not steady motion
+            if (t < SPIN_UP_SECONDS) continue;
 
             Pose pose = pc.getFinalLocalizer().getPose();
 
             if (referenceHeading == null) referenceHeading = pose.heading;
-            double headingSample = MathHelper.normalizeAngleRad(pose.heading - referenceHeading);
 
-            count++;
+            x.add(t, pose.x);
+            y.add(t, pose.y);
+            heading.add(t, MathHelper.normalizeAngleRad(pose.heading - referenceHeading));
 
-            //welford's algorithm for the win!
-            double dx = pose.x - avgX;
-            avgX += dx / count;
-            m2X += dx * (pose.x - avgX);
-
-            double dy = pose.y - avgY;
-            avgY += dy / count;
-            m2Y += dy * (pose.y - avgY);
-
-            double dh = headingSample - avgHeading;
-            avgHeading += dh / count;
-            m2Heading += dh * (headingSample - avgHeading);
-
-            telemetry.addData("sampling", "%.3f / %.3f sec", getRuntime() - startTime, SAMPLE_DURATION);
+            telemetry.addData("sampling", "%.3f / %.3f sec", t - SPIN_UP_SECONDS, SAMPLE_DURATION);
             telemetry.update();
         }
 
-        double xVariance = count > 1 ? m2X / (count - 1) : 0;
-        double yVariance = count > 1 ? m2Y / (count - 1) : 0;
-        double headingVariance = count > 1 ? m2Heading / (count - 1) : 0;
+        pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
-        final double positionNoise = Math.sqrt(xVariance + yVariance);
-        final double headingNoise = Math.sqrt(headingVariance);
+        final double positionNoise = Math.sqrt(x.variance() + y.variance());
+        final double headingNoise = Math.sqrt(heading.variance());
 
-        final double positionAlreadyCloseThreshold = Math.max(MIN_ALREADY_CLOSE_THRESHOLD_POSITION, positionNoise * ALREADY_CLOSE_NOISE_MULTIPLIER);
-        final double headingAlreadyCloseThreshold = Math.max(MIN_ALREADY_CLOSE_THRESHOLD_HEADING, headingNoise * ALREADY_CLOSE_NOISE_MULTIPLIER);
+        double travelled = Math.hypot(x.speed(), y.speed()) * SAMPLE_DURATION;
+
+        if (travelled <= positionNoise) {
+
+            telemetry.addLine("The robot moved less than the stray being measured, so there is nothing here to measure.");
+            telemetry.update();
+
+            while (opModeIsActive()) ;
+            return;
+        }
+
+        final double positionAlreadyCloseThreshold = positionNoise * ALREADY_CLOSE_NOISE_MULTIPLIER;
+        final double headingAlreadyCloseThreshold = headingNoise * ALREADY_CLOSE_NOISE_MULTIPLIER;
 
         telemetry.addLine("=== FOR TranslationLQRTest ===");
         telemetry.addData("ALREADY_CLOSE_THRESHOLD_POSITION (in)", positionAlreadyCloseThreshold);
@@ -101,5 +100,40 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
         telemetry.update();
 
         while (opModeIsActive()) ;
+    }
+
+    private static class Wobble {
+
+        private double n, meanT, meanValue, m2T, m2Value, covariance;
+
+        void add(double t, double value) {
+
+            n++;
+
+            //welford's algorithm for the win!
+            double dt = t - meanT;
+            meanT += dt / n;
+            m2T += dt * (t - meanT);
+
+            double dValue = value - meanValue;
+            meanValue += dValue / n;
+            m2Value += dValue * (value - meanValue);
+
+            covariance += dt * (value - meanValue);
+        }
+
+        double speed() {
+            return m2T > 0 ? covariance / m2T : 0;
+        }
+
+        //what is left once the steady motion is taken back out
+        double variance() {
+
+            if (n < 3 || m2T <= 0) return 0;
+
+            double residual = m2Value - speed() * covariance;
+
+            return Math.max(0, residual) / (n - 2);
+        }
     }
 }

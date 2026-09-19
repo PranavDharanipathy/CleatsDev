@@ -63,7 +63,7 @@ public class NoiseKalmanFilter {
 
         if (!areParametersSet) throw new RuntimeException("Parameters weren't set!");
 
-        if (!isBeingTuned && noKF()) {
+        if (!isBeingTuned && noKF() || providedDt == 0) {
             filteredData = data;
             return;
         }

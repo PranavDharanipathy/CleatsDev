@@ -28,7 +28,7 @@ public class PathOptimizerMarginTest extends LinearOpMode {
         pc = Constants.getPathController(hardwareMap);
 
         telemetry.addLine("Clear a " + ((int) (SIZE * 1.5)) + " inch square in front and to the left of the robot.");
-        telemetry.addLine("The robot will drive in four shapes and tell you how far it moved away from the line.");
+        telemetry.addLine("B at any time to drive the robot somewhere clearer.");
         telemetry.update();
 
         waitForStart();
@@ -41,7 +41,13 @@ public class PathOptimizerMarginTest extends LinearOpMode {
 
         for (int i = 0; i < names.length && opModeIsActive(); i++) {
 
-            worst[i] = drive(names[i], shape(i));
+            //an interrupted shape runs again from wherever the robot was left
+            do {
+                repositioned = false;
+                worst[i] = drive(names[i], shape(i));
+            }
+            while (repositioned && opModeIsActive());
+
             returnHome();
         }
 
@@ -92,9 +98,11 @@ public class PathOptimizerMarginTest extends LinearOpMode {
 
             pc.update();
 
+            if (reposition()) return 0;
+
             worst = Math.max(worst, path.getPathError(pc.getPose()));
 
-            telemetry.addLine("DRIVING " + name);
+            telemetry.addLine("DRIVING " + name + "   (B to reposition)");
             telemetry.addData("off the line now (in)", path.getPathError(pc.getPose()));
             telemetry.addData("worst so far (in)", worst);
             telemetry.update();
@@ -119,10 +127,45 @@ public class PathOptimizerMarginTest extends LinearOpMode {
 
             pc.update();
 
-            telemetry.addLine("driving back to the start spot");
+            if (reposition()) return;
+
+            telemetry.addLine("driving back to the start spot   (B to reposition)");
             telemetry.update();
         }
 
         pc.cancel();
+    }
+
+    private boolean repositioned;
+
+    private boolean reposition() {
+
+        if (!gamepad1.b) return false;
+
+        pc.cancel();
+        repositioned = true;
+
+        while (opModeIsActive() && gamepad1.b) pc.update();
+
+        while (opModeIsActive()) {
+
+            pc.update();
+
+            pc.getChassis().driveFromJoystick(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+
+            telemetry.addLine("driving free, B when the robot is where you want it");
+            telemetry.update();
+
+            if (gamepad1.b) break;
+        }
+
+        while (opModeIsActive() && gamepad1.b) pc.update();
+
+        pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
+
+        pc.update();
+        home = pc.getPose().copy();
+
+        return true;
     }
 }

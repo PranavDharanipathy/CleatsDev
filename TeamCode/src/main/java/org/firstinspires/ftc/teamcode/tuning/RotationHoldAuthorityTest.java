@@ -29,6 +29,7 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
     private static final double[] SHARES = {0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.45, 0.7, 1};
 
     private PathController pc;
+    private Pose home;
 
     @Override
     public void runOpMode() {
@@ -36,13 +37,14 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
         pc = Constants.getPathController(hardwareMap);
 
         telemetry.addLine("Clear about 6ft square. The robot turns in place and shoves itself sideways mid turn, then drives back to where it started.");
+        telemetry.addLine("B at any time to drive the robot somewhere clearer.");
         telemetry.update();
 
         waitForStart();
 
         pc.update();
 
-        Pose home = pc.getPose().copy();
+        home = pc.getPose().copy();
 
         double[] meanHeading = new double[SHARES.length];
         double[] worstHeading = new double[SHARES.length];
@@ -58,14 +60,23 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
                 double shoveAt = FIRST_SHOVE_AT + r * SHOVE_SPACING;
                 double direction = (r % 2 == 0) ? 1 : -1;
 
-                double[] result = trial(TURN_DEGREES * direction, shoveAt);
+                double[] result;
+
+                //an interrupted trial runs again
+                do {
+                    repositioned = false;
+                    result = trial(TURN_DEGREES * direction, shoveAt);
+                }
+                while (repositioned && opModeIsActive());
+
+                if (result == null) break;
 
                 meanHeading[s] += result[0] / REPEATS;
                 worstHeading[s] = Math.max(worstHeading[s], result[0]);
                 meanLeftOff[s] += result[1] / REPEATS;
                 meanPushed[s] += result[2] / REPEATS;
 
-                telemetry.addLine("=== TRIAL ===");
+                telemetry.addLine("=== TRIAL ===   (B to reposition)");
                 telemetry.addData("share", SHARES[s]);
                 telemetry.addData("repeat", (r + 1) + " of " + REPEATS);
                 telemetry.addData("heading left over (deg)", result[0]);
@@ -73,7 +84,7 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
                 telemetry.addData("pushed off by (in)", result[2]);
                 telemetry.update();
 
-                returnTo(home);
+                returnTo();
             }
         }
 
@@ -101,6 +112,8 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
             pc.update();
 
+            if (reposition()) return null;
+
             //straight after the controller, so this loop's command is the shove instead
             if (t > shoveAt && t < shoveAt + SHOVE_SECONDS) pc.getChassis().setDrivePowerBypassRamp(0, SHOVE_POWER, 0);
 
@@ -117,7 +130,7 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
         };
     }
 
-    private void returnTo(Pose home) {
+    private void returnTo() {
 
         pc.update();
 
@@ -131,12 +144,48 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
             pc.update();
 
-            telemetry.addLine("driving back to the start spot");
+            if (reposition()) return;
+
+            telemetry.addLine("driving back to the start spot   (B to reposition)");
             telemetry.addData("away (in)", Math.hypot(pc.getX() - home.x, pc.getY() - home.y));
             telemetry.update();
         }
 
         pc.cancel();
+    }
+
+    private boolean repositioned;
+
+    private boolean reposition() {
+
+        if (!gamepad1.b) return false;
+
+        pc.cancel();
+        repositioned = true;
+
+        while (opModeIsActive() && gamepad1.b) pc.update();
+
+        while (opModeIsActive()) {
+
+            pc.update();
+
+            pc.getChassis().driveFromJoystick(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+
+            telemetry.addLine("driving free, B when the robot is where you want it");
+            telemetry.update();
+
+            if (gamepad1.b) break;
+        }
+
+        while (opModeIsActive() && gamepad1.b) pc.update();
+
+        pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
+
+        //the trials return here between repeats, so where you left it is the new start spot
+        pc.update();
+        home = pc.getPose().copy();
+
+        return true;
     }
 
     private void report(double[] meanHeading, double[] worstHeading, double[] meanLeftOff, double[] meanPushed) {
@@ -146,8 +195,6 @@ public class RotationHoldAuthorityTest extends LinearOpMode {
 
         double allowedHeading = Math.toDegrees(pc.getBrakingModel().getAngularMargin());
 
-        //the smallest share that already holds position as well as any larger one does
-        //that doesn't induce more slack
         double pick = 0;
 
         for (int i = 0; i < SHARES.length; i++) {

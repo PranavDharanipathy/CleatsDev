@@ -41,7 +41,7 @@ public class ForwardTest extends LinearOpMode {
 
             double accelMagnitude = Math.hypot(accel.x, accel.y);
             double speed = Math.hypot(vel.x, vel.y);
-
+            
             peakAccel = Math.max(peakAccel, accelMagnitude);
             peakForwardSpeed = Math.max(peakForwardSpeed, speed);
 

@@ -303,7 +303,7 @@ public class BrakingModelTest extends LinearOpMode {
 
             pc.update();
 
-            pc.getChassis().driveFromJoystick(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+            pc.getChassis().driveFromJoystick(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
 
             telemetry.addData("A to run", label);
             telemetry.update();

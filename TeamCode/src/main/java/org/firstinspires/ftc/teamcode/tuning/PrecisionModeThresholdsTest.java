@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.util.Pose;
 @TeleOp(group = "Cleats Tuning")
 public class PrecisionModeThresholdsTest extends LinearOpMode {
 
-    // PLEASE use the debugging data printed onto telemetry to help you
+    // Use the debugging data printed onto telemetry to help you
     // change these values in the event where that may be necessary.
 
     // In case you may want a different value, do not go below 3 or above 10.
@@ -96,16 +96,16 @@ public class PrecisionModeThresholdsTest extends LinearOpMode {
         //telemetry.addData("exit/entry heading ratio", exitHeadingError / entryHeadingError);
 
         if (entryPositionDistance > POSITION_SEARCH_MAX * 0.95) {
-            telemetry.addLine("Entry position result is near the search ceiling, raise POSITION_SEARCH_HI and run again.");
+            telemetry.addLine("Entry position result is near the search ceiling, raise POSITION_SEARCH_MAX and run again.");
         }
         if (exitPositionDistance > EXIT_POSITION_SEARCH_MAX * 0.95) {
-            telemetry.addLine("Exit position result is near the search ceiling, raise EXIT_POSITION_SEARCH_HI and run again.");
+            telemetry.addLine("Exit position result is near the search ceiling, raise EXIT_POSITION_SEARCH_MAX and run again.");
         }
         if (entryHeadingError > Math.toRadians(HEADING_SEARCH_MAX_DEGREES) * 0.95) {
-            telemetry.addLine("Entry heading result is near the search ceiling, raise HEADING_SEARCH_HI_DEGREES and run again.");
+            telemetry.addLine("Entry heading result is near the search ceiling, raise HEADING_SEARCH_MAX_DEGREES and run again.");
         }
         if (exitHeadingError > Math.toRadians(EXIT_HEADING_SEARCH_MAX_DEGREES) * 0.95) {
-            telemetry.addLine("Exit heading result is near the search ceiling, raise EXIT_HEADING_SEARCH_HI_DEGREES and run again.");
+            telemetry.addLine("Exit heading result is near the search ceiling, raise EXIT_HEADING_SEARCH_MAX_DEGREES and run again.");
         }
 
         telemetry.update();
