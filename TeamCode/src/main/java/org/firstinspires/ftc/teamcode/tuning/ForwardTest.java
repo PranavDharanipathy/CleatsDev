@@ -101,9 +101,9 @@ public class ForwardTest extends LinearOpMode {
         double dmax = distance > 0 ? atBrake * atBrake / (2 * distance) : 0;
 
         telemetry.addLine("=== FORWARD RESULTS ===");
+        telemetry.addData("vmaxF (in/s)", fit[0]);
         telemetry.addData("amaxF (in/s^2)", Math.min(fit[1], dmax));
         telemetry.addData("dmaxF (in/s^2)", dmax);
-        telemetry.addData("vmaxF (in/s)", fit[0]);
         telemetry.update();
 
         while (opModeIsActive()) ;

@@ -101,9 +101,9 @@ public class StrafeTest extends LinearOpMode {
         double dmax = distance > 0 ? atBrake * atBrake / (2 * distance) : 0;
 
         telemetry.addLine("=== STRAFE RESULTS ===");
+        telemetry.addData("vmaxS (in/s)", fit[0]);
         telemetry.addData("amaxS (in/s^2)", Math.min(fit[1], dmax));
         telemetry.addData("dmaxS (in/s^2)", dmax);
-        telemetry.addData("vmaxS (in/s)", fit[0]);
         telemetry.update();
 
         while (opModeIsActive()) ;

@@ -100,9 +100,9 @@ public class HeadingTest extends LinearOpMode {
         double dmax = angle > 0 ? atBrake * atBrake / (2 * angle) : 0;
 
         telemetry.addLine("=== HEADING RESULTS ===");
+        telemetry.addData("vmaxH (rad/s)", fit[0]);
         telemetry.addData("amaxH (rad/s^2)", Math.min(fit[1], dmax));
         telemetry.addData("dmaxH (rad/s^2)", dmax);
-        telemetry.addData("vmaxH (rad/s)", fit[0]);
         telemetry.update();
 
         while (opModeIsActive()) ;
