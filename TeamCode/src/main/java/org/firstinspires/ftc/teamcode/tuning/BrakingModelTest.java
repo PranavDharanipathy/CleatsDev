@@ -78,7 +78,9 @@ public class BrakingModelTest extends LinearOpMode {
 
         double margin = 0, angularMargin = 0;
 
-        if (usable(forward) && usable(strafe) && usable(diagonal) && usable(angular)) {
+        String missed = firstMissing(forward, "forward", strafe, "strafe", diagonal, "diagonal", angular, "turn");
+
+        if (missed == null) {
 
             BrakingModel model = new BrakingModel(speeds, forward, strafe, diagonal, angularSpeeds, angular, 0, 0);
 
@@ -89,6 +91,10 @@ public class BrakingModelTest extends LinearOpMode {
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
         telemetry.addLine("=== BRAKING MODEL RESULTS ===");
+
+        //a zero in a table means a leg never got up to speed
+        if (missed != null) telemetry.addLine("The " + missed + " legs did not all reach their speed, so there is no margin. Give that direction more room.");
+
         addTable("speeds", speeds);
         addTable("forwardDistances", forward);
         addTable("strafeDistances", strafe);
@@ -103,11 +109,16 @@ public class BrakingModelTest extends LinearOpMode {
         while (opModeIsActive()) ;
     }
 
-    private boolean usable(double[] values) {
+    private String firstMissing(Object... tablesAndNames) {
 
-        for (double value : values) if (value <= 0) return false;
+        for (int i = 0; i < tablesAndNames.length; i += 2) {
 
-        return true;
+            for (double value : (double[]) tablesAndNames[i]) {
+                if (value <= 0) return (String) tablesAndNames[i + 1];
+            }
+        }
+
+        return null;
     }
 
     private double translationLeg(double targetSpeed, double forwardPower, double strafePower, String name) {

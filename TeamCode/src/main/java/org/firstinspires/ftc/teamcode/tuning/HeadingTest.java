@@ -97,7 +97,16 @@ public class HeadingTest extends LinearOpMode {
             return;
         }
 
-        double dmax = angle > 0 ? atBrake * atBrake / (2 * angle) : 0;
+        if (angle <= 0) {
+
+            telemetry.addLine("It never moved once braking began, so it ran out of room or something is holding it.");
+            telemetry.update();
+
+            while (opModeIsActive()) ;
+            return;
+        }
+
+        double dmax = atBrake * atBrake / (2d * angle);
 
         telemetry.addLine("=== HEADING RESULTS ===");
         telemetry.addData("vmaxH (rad/s)", fit[0]);

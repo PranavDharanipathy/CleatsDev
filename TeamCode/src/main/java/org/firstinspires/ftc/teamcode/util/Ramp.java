@@ -11,7 +11,7 @@ public final class Ramp {
     }
 
     public Ramp() {
-        this (6);
+        this (2);
     }
 
     private static final int MOST_SAMPLES_READ = 256;

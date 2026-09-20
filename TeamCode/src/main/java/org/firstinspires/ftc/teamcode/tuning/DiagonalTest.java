@@ -98,7 +98,16 @@ public class DiagonalTest extends LinearOpMode {
             return;
         }
 
-        double dmax = distance > 0 ? atBrake * atBrake / (2 * distance) : 0;
+        if (distance <= 0) {
+
+            telemetry.addLine("It never moved once braking began, so it ran out of room or something is holding it.");
+            telemetry.update();
+
+            while (opModeIsActive()) ;
+            return;
+        }
+
+        double dmax = atBrake * atBrake / (2d * distance);
 
         telemetry.addLine("=== DIAGONAL RESULTS ===");
         telemetry.addData("vmaxD (in/s)", fit[0]);

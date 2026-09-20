@@ -81,7 +81,10 @@ public class BrakingModel {
 
     private double interpolateDirectional(double angle, double speed) {
 
-        if (speed <= speeds[0]) return lameValueAt(0, angle) * speed / speeds[0];
+        //stopping distance grows with the square of speed so the table is read on that axis
+        double squared = speed * speed;
+
+        if (speed <= speeds[0]) return lameValueAt(0, angle) * squared / (speeds[0] * speeds[0]);
 
         if (speed > speeds[speeds.length - 1]) {
 
@@ -90,7 +93,9 @@ public class BrakingModel {
             double previous = lameValueAt(last - 1, angle);
             double end = lameValueAt(last, angle);
 
-            return end + (end - previous) * (speed - speeds[last]) / (speeds[last] - speeds[last - 1]);
+            double from = speeds[last - 1] * speeds[last - 1], to = speeds[last] * speeds[last];
+
+            return end + (end - previous) * (squared - to) / (to - from);
         }
 
         //efficiency, ends up being O(log n) instead of O(n)
@@ -99,7 +104,9 @@ public class BrakingModel {
         double low = lameValueAt(i - 1, angle);
         double high = lameValueAt(i, angle);
 
-        return low + (high - low) * (speed - speeds[i - 1]) / (speeds[i] - speeds[i - 1]);
+        double from = speeds[i - 1] * speeds[i - 1], to = speeds[i] * speeds[i];
+
+        return low + (high - low) * (squared - from) / (to - from);
     }
 
     private double lameValueAt(int index, double angle) {
@@ -108,19 +115,25 @@ public class BrakingModel {
 
     private static double interpolate(double[] xs, double[] ys, double x) {
 
-        if (x <= xs[0]) return ys[0] * x / xs[0];
+        double squared = x * x;
+
+        if (x <= xs[0]) return ys[0] * squared / (xs[0] * xs[0]);
 
         if (x > xs[xs.length - 1]) {
 
             int last = xs.length - 1;
 
-            return ys[last] + (ys[last] - ys[last - 1]) * (x - xs[last]) / (xs[last] - xs[last - 1]);
+            double from = xs[last - 1] * xs[last - 1], to = xs[last] * xs[last];
+
+            return ys[last] + (ys[last] - ys[last - 1]) * (squared - to) / (to - from);
         }
 
         //efficiency, ends up being O(log n) instead of O(n)
         int i = BinarySearch.firstGreaterOrEqual(xs, x);
 
-        return ys[i - 1] + (ys[i] - ys[i - 1]) * (x - xs[i - 1]) / (xs[i] - xs[i - 1]);
+        double from = xs[i - 1] * xs[i - 1], to = xs[i] * xs[i];
+
+        return ys[i - 1] + (ys[i] - ys[i - 1]) * (squared - from) / (to - from);
     }
 
     public double getMargin() {
