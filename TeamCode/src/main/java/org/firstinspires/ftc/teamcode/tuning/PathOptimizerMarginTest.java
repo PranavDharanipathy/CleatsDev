@@ -6,8 +6,10 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.following.PathController;
+import org.firstinspires.ftc.teamcode.path.HeadingOp;
 import org.firstinspires.ftc.teamcode.path.HermiteSpline;
 import org.firstinspires.ftc.teamcode.path.Movement;
+import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
 
 //@Config
@@ -15,6 +17,9 @@ import org.firstinspires.ftc.teamcode.util.Pose;
 public class PathOptimizerMarginTest extends LinearOpMode {
 
     public static double SIZE = 48;
+
+    //one run of a shape can come out a lot worse than the next
+    public static int REPEATS = 3;
 
     public static double DRIVE_TIMEOUT = 15;
     public static double RETURN_TIMEOUT = 12;
@@ -41,13 +46,20 @@ public class PathOptimizerMarginTest extends LinearOpMode {
 
         for (int i = 0; i < names.length && opModeIsActive(); i++) {
 
-            do {
-                repositioned = false;
-                worst[i] = drive(names[i], shape(i));
-            }
-            while (repositioned && opModeIsActive());
+            for (int r = 0; r < REPEATS && opModeIsActive(); r++) {
 
-            returnHome();
+                double run;
+
+                do {
+                    repositioned = false;
+                    run = drive(names[i], shape(i));
+                }
+                while (repositioned && opModeIsActive());
+
+                worst[i] = Math.max(worst[i], run);
+
+                returnHome();
+            }
         }
 
         double overall = 0;
@@ -57,7 +69,7 @@ public class PathOptimizerMarginTest extends LinearOpMode {
 
         telemetry.addLine("=== PATH OPTIMIZER MARGIN ===");
         telemetry.addData("worst anywhere (in)", overall);
-        telemetry.addData("setMargin", Math.ceil(overall * 4) / 4);
+        telemetry.addData("setMargin", MathHelper.roundUpToMultiple(overall, 0.25));
         telemetry.addLine("The margin has to cover this, or the planner will route the robot");
         telemetry.addLine("through gaps the follower cannot actually hold it in.");
         telemetry.update();
@@ -118,7 +130,8 @@ public class PathOptimizerMarginTest extends LinearOpMode {
 
         if (Math.hypot(pc.getX() - home.x, pc.getY() - home.y) < 2) return;
 
-        pc.follow(new HermiteSpline(pc.getPose().copy(), home.copy()));
+        //facing the way it started, or the next shape opens with a half turn
+        pc.follow(new HermiteSpline(pc.getPose().copy(), home.copy()).setHeadingOp(HeadingOp.linearHeading(pc.getHeading(), home.heading)));
 
         double started = getRuntime();
 

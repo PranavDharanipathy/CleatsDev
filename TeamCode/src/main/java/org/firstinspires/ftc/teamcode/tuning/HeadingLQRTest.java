@@ -23,7 +23,7 @@ public class HeadingLQRTest extends LinearOpMode {
     public static double TEST_ANGLE_DEGREES = 30;
 
     //must stay well under TEST_ANGLE_DEGREES or the return leg exits immediately
-    private static final double ALREADY_CLOSE_THRESHOLD_HEADING = 0.0322;
+    static final double ALREADY_CLOSE_THRESHOLD_HEADING = 0.0326;
     private static final double MAX_RETURN_TIME = 5;
 
     private PathController pc;
@@ -54,11 +54,16 @@ public class HeadingLQRTest extends LinearOpMode {
             if (gamepad1.a) stopRequested = true;
 
             //turn away
+            //on the spot it started from, or the scrub from every turn adds up into a walk
             Pose currentPose = pc.getFinalLocalizer().getPose();
-            pc.follow(new HermiteSpline(currentPose, new Pose(currentPose.x, currentPose.y, awayHeading))
+            pc.follow(new HermiteSpline(currentPose, new Pose(start.x, start.y, awayHeading))
                     .setHeadingOp(HeadingOp.linearHeading(currentPose.heading, awayHeading)), false);
 
-            while (opModeIsActive() && pc.isFollowing()) {
+            //bang bang lands on the position and the heading at once or not at all,
+            //so the leg gives up instead of locking the op mode out
+            double awayStartTime = getRuntime();
+
+            while (opModeIsActive() && pc.isFollowing() && getRuntime() - awayStartTime < MAX_RETURN_TIME) {
 
                 if (gamepad1.a) stopRequested = true;
 
@@ -66,6 +71,8 @@ public class HeadingLQRTest extends LinearOpMode {
                 telemetry.addLine("turning away");
                 telemetry.update();
             }
+
+            pc.cancel();
 
             //turning back (using LQR)
             Double initialHeadingError = null;

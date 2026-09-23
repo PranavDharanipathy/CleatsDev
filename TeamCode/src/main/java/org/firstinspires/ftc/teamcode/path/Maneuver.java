@@ -137,7 +137,8 @@ public class Maneuver {
             step.length = replanned.getRemainingDistance(currentPose);
         }
 
-        boolean settles = usesPrecision(index) || handoffDistance <= 0;
+        //the last step has nothing to hand off to, so it lands instead of stopping short
+        boolean settles = usesPrecision(index) || handoffDistance <= 0 || index == steps.size() - 1;
 
         double remaining = step.movement.getRemainingDistance(currentPose);
 

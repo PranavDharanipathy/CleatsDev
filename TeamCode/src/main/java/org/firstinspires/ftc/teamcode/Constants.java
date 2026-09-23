@@ -57,20 +57,20 @@ public class Constants {
                 .accelerationHeadingNKFParams(new FinalLocalizerNKFConfig(1, 0, 1))
                 .motionConstraints(
                         new MotionConstraints(
-                                63.3895, 54.1883, 45.1827, 5.2525,
-                                755.7823, 1822.542, 2148.4248, 73.3434,
-                                832.8535, 137.9856, 356.4688, 73.7074
+                                60.6171, 50.7923, 37.7414, 5.0722,
+                                163.4158, 109.4816, 110.4941, 34.7167,
+                                163.4158, 140.7712, 119.3241, 34.7167
                         )
                 )
                 .brakingModel(() -> new BrakingModel(
-                                new double[] {10, 20, 30, 40, 50},
-                                new double[] {0, 0, 0, 0, 0},
-                                new double[] {0, 0, 0, 0, 0},
-                                new double[] {0, 0, 0, 0, 0},
-                                new double[] {2, 4, 6, 8},
-                                new double[] {0, 0, 0, 0},
-                                0,
-                                0
+                                new double[] {7.5483, 15.0966, 22.6448, 30.1931, 37.7414},
+                                new double[] {0.4473, 1.5288, 2.3919, 4.9343, 6.3572},
+                                new double[] {0.6015, 1.4211, 2.8760, 4.3038, 5.0928},
+                                new double[] {0.4197, 1.3682, 2.5735, 4.8332, 5.8095},
+                                new double[] {1.0144, 2.0289, 3.0433, 4.0578, 5.0722},
+                                new double[] {0.0483, 0.1186, 0.1794, 0.3137, 0.3607},
+                                0.354803287,
+                                Math.toRadians(4.95159065)
                 ))
                 .poseLQRController(() -> new PoseLQRController(
                         0, 0,

@@ -56,4 +56,8 @@ public final class MathHelper {
         return Math.pow(cosTerm + sinTerm, -1d / N);
     }
 
+    public static double roundUpToMultiple(double value, double multiple) {
+        return Math.ceil(value / multiple) * multiple;
+    }
+
 }

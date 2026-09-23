@@ -23,7 +23,7 @@ public class TranslationLQRTest extends LinearOpMode {
 
     public static double TEST_DISTANCE = 12; //inches
 
-    private static final double ALREADY_CLOSE_THRESHOLD_POSITION = 4.133; //inches
+    static final double ALREADY_CLOSE_THRESHOLD_POSITION = 1.9574; //inches
     private static final double MAX_RETURN_TIME = 5;
 
     private PathController pc;
@@ -59,7 +59,11 @@ public class TranslationLQRTest extends LinearOpMode {
             pc.follow(new HermiteSpline(pc.getFinalLocalizer().getPose(), away)
                     .setHeadingOp(HeadingOp.constantHeading(start.heading)), false);
 
-            while (opModeIsActive() && pc.isFollowing()) {
+            //bang bang lands on the position and the heading at once or not at all,
+            //so the leg gives up instead of locking the op mode out
+            double awayStartTime = getRuntime();
+
+            while (opModeIsActive() && pc.isFollowing() && getRuntime() - awayStartTime < MAX_RETURN_TIME) {
 
                 if (gamepad1.a) stopRequested = true;
 
@@ -67,6 +71,8 @@ public class TranslationLQRTest extends LinearOpMode {
                 telemetry.addLine("Moving away with transit mode");
                 telemetry.update();
             }
+
+            pc.cancel();
 
             //driving back (using LQR)
             Double initialForwardError = null, initialStrafeError = null;

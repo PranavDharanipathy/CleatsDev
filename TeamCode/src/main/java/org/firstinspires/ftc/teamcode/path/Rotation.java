@@ -7,7 +7,6 @@ public abstract class Rotation extends Movement {
 
     private static final double COMPLETION_HEADING_EPSILON = Math.toRadians(2);
 
-    //MathHelper.normalizeAngleRad only preserves values inside this, so what is reported stops here
     private static final double MAX_REPORTED_ERROR = Math.PI * 0.99;
 
     private Pose startPose;
@@ -79,6 +78,11 @@ public abstract class Rotation extends Movement {
         if (COMPLETION_ANGULAR_SPEED_EPSILON > 0 && Math.abs(currentVelocity.heading) >= COMPLETION_ANGULAR_SPEED_EPSILON) return false;
 
         return Math.abs(getRemainingRotation()) < COMPLETION_HEADING_EPSILON;
+    }
+
+    @Override
+    public double getHeadingTolerance() {
+        return COMPLETION_HEADING_EPSILON;
     }
 
     @Override

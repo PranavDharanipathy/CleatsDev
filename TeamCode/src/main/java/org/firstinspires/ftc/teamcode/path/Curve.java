@@ -156,10 +156,10 @@ public abstract class Curve extends Movement {
     protected double getLocalProgress(double u) {
 
         double total = getTotalLength();
-
-        if (total <= 0) return 0;
-
         double maxParam = getMaxParam();
+
+        //a curve that goes nowhere still has to sweep its heading op
+        if (total <= 0) return maxParam > 0 ? MathHelper.clamp(u / maxParam, 0, 1) : 0;
 
         return MathHelper.clamp(1 - arcLength(MathHelper.clamp(u, 0, maxParam), maxParam) / total, 0, 1);
     }
@@ -169,7 +169,8 @@ public abstract class Curve extends Movement {
         Pose end = evaluate(getMaxParam());
         if (Math.hypot(currentPose.x - end.x, currentPose.y - end.y) >= COMPLETION_POSITION_EPSILON) return false;
 
-        return isDegenerate() || findBestParam(currentPose) >= getMaxParam() - COMPLETION_PARAM_EPSILON;
+        //along the curve, so it agrees with the distance the follower closes
+        return isDegenerate() || arcLength(findBestParam(currentPose), getMaxParam()) < COMPLETION_POSITION_EPSILON;
     }
 
     private boolean isProjectionUseful(Pose currentPose) {
@@ -296,6 +297,16 @@ public abstract class Curve extends Movement {
 
         double headingError = MathHelper.normalizeAngleRad(currentPose.heading - getEndPose().heading);
         return Math.abs(headingError) < COMPLETION_HEADING_EPSILON;
+    }
+
+    @Override
+    public double getPositionTolerance() {
+        return COMPLETION_POSITION_EPSILON;
+    }
+
+    @Override
+    public double getHeadingTolerance() {
+        return COMPLETION_HEADING_EPSILON;
     }
 
     @Override

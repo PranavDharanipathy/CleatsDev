@@ -4,7 +4,7 @@ import org.firstinspires.ftc.teamcode.util.Pose;
 
 public abstract class Movement {
 
-    //0 turns the gate off (measured by CompletionSpeedTest)
+    //measured by CompletionSpeedTest
     protected static final double COMPLETION_SPEED_EPSILON = 0;
 
     protected static final double COMPLETION_ANGULAR_SPEED_EPSILON = 0;
@@ -16,6 +16,14 @@ public abstract class Movement {
     public abstract Pose getEndPose();
 
     public void reset() {}
+
+    public double getPositionTolerance() {
+        return Double.POSITIVE_INFINITY;
+    }
+
+    public double getHeadingTolerance() {
+        return Double.POSITIVE_INFINITY;
+    }
 
     private Replanner replanner;
     private double replanOffShootDistance;

@@ -235,8 +235,9 @@ public class PathController implements KinematicState {
                 double alongAngle = robotFrameAngle(tangent.x, tangent.y);
 
                 //whichever of the two wants less throttle wins, so a bend can only ever slow it down
+                //a deadband wider than arrived would idle short of it for good
                 alongCommand = Math.min(
-                        axisCommand(movement.getRemainingDistance(pose), alongVelocity, alongAngle),
+                        axisCommand(movement.getRemainingDistance(pose), alongVelocity, alongAngle, Math.min(brakingModel.getMargin(), movement.getPositionTolerance())),
                         curveCommand(movement, alongVelocity, alongAngle, robotFrameAngle(normalX, normalY))
                 );
             }
@@ -244,7 +245,8 @@ public class PathController implements KinematicState {
             double crossCommand = axisCommand(
                     movement.getSignedCrossTrack(pose),
                     velocity.x * normalX + velocity.y * normalY,
-                    robotFrameAngle(normalX, normalY)
+                    robotFrameAngle(normalX, normalY),
+                    brakingModel.getMargin()
             );
 
             double driveX = alongCommand * tangent.x + crossCommand * normalX;
@@ -264,8 +266,15 @@ public class PathController implements KinematicState {
 
         double desiredTurn;
 
+        double angularMargin = brakingModel.getAngularMargin();
+
+        //once arrived, the heading has to land inside arrived too
+        if (Math.hypot(endPose.x - pose.x, endPose.y - pose.y) < movement.getPositionTolerance()) {
+            angularMargin = Math.min(angularMargin, movement.getHeadingTolerance());
+        }
+
         if (headingMode == Mode.PRECISION) desiredTurn = lqrTurn;
-        else desiredTurn = headingCommand(MathHelper.normalizeAngleRad(target.heading - pose.heading), velocity.heading);
+        else desiredTurn = headingCommand(MathHelper.normalizeAngleRad(target.heading - pose.heading), velocity.heading, angularMargin);
 
         //the turn's braking distance assumes it owns the wheels, so holding yields while it brakes
         if (movement instanceof Rotation && desiredTurn * velocity.heading < 0) {
@@ -324,9 +333,7 @@ public class PathController implements KinematicState {
         }
     }
 
-    private double axisCommand(double error, double closingVelocity, double axisAngle) {
-
-        final double margin = brakingModel.getMargin();
+    private double axisCommand(double error, double closingVelocity, double axisAngle, double margin) {
 
         double stoppingDistance = brakingModel.getStoppingDistance(axisAngle, Math.abs(closingVelocity));
 
@@ -335,7 +342,11 @@ public class PathController implements KinematicState {
 
         boolean movingTowardTarget = error * closingVelocity > 0;
 
-        if (movingTowardTarget && Math.abs(error) <= stoppingDistance) return -Math.signum(closingVelocity);
+        //brakes a loop early, the next chance to brake is a loop away
+        if (movingTowardTarget && Math.abs(error) - Math.abs(closingVelocity) * dt <= stoppingDistance) return -Math.signum(closingVelocity);
+
+        //a curve's end and a rotation report no cross track, so drift stops here
+        if (error == 0) return -Math.signum(closingVelocity);
 
         return Math.signum(error);
     }
@@ -388,9 +399,7 @@ public class PathController implements KinematicState {
         return Math.min(speed, Math.sqrt(motionConstraints.getAmaxH() / curvatureRate));
     }
 
-    private double headingCommand(double error, double angularVelocity) {
-
-        final double margin = brakingModel.getAngularMargin();
+    private double headingCommand(double error, double angularVelocity, double margin) {
 
         double stoppingAngle = brakingModel.getAngularStoppingDistance(Math.abs(angularVelocity));
 
@@ -461,6 +470,10 @@ public class PathController implements KinematicState {
 
     public BrakingModel getBrakingModel() {
         return brakingModel;
+    }
+
+    public PoseLQRController getPoseLQRController() {
+        return poseLQR;
     }
 
     public boolean isTranslationOnPrecisionMode() {

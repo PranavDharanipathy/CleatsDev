@@ -11,24 +11,19 @@ import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.following.PathController;
 import org.firstinspires.ftc.teamcode.util.MathHelper;
 import org.firstinspires.ftc.teamcode.util.Pose;
+import org.firstinspires.ftc.teamcode.util.PoseLQRTuner;
 
 //@Config
 @TeleOp(group = "Cleats Tuning")
 public class LQROvershootDiagnosticTest extends LinearOpMode {
 
-    private static final double SAMPLE_DURATION = 2;
-
-    //a standing robot's ticks never change, so the wobble only shows up against motion
-    private static final double CREEP_POWER = 0.25;
-    private static final double SPIN_UP_SECONDS = 0.5;
-
-    //how many standard deviations of noise count as already settled down,
-    //this is an educated guess, not derived from data
-    private static final double ALREADY_CLOSE_NOISE_MULTIPLIER = 30; //determined using three sigma rule
+    //a thousandth of full power a loop, so it's caught just as it starts moving
+    private static final double RAMP_PER_LOOP = 0.001;
 
     private Telemetry telemetry;
 
     private PathController pc;
+    private PoseLQRTuner translationTuner, headingTuner;
 
     @Override
     public void runOpMode() {
@@ -37,59 +32,32 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
 
         telemetry = new MultipleTelemetry(super.telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        telemetry.addLine("Clear about 3 ft diagonally forward and to the right.");
-        telemetry.addLine("Press start, the robot will creep in a straight line and measure how far the localizer strays from it.");
+        telemetry.addLine("Clear about a foot all around the robot.");
+        telemetry.addLine("Press start, the robot will push a little harder each moment until it just starts to move, both ways on every axis.");
         telemetry.update();
 
         waitForStart();
 
-        Wobble x = new Wobble(), y = new Wobble(), heading = new Wobble();
+        //the same loop rate limit the LQR tests end up at
+        translationTuner = new PoseLQRTuner(pc.getMotionConstraints(), TranslationLQRTest.LOOP_ITERATIONS_PER_TIME_CONSTANT);
+        headingTuner = new PoseLQRTuner(pc.getMotionConstraints(), HeadingLQRTest.LOOP_ITERATIONS_PER_TIME_CONSTANT);
 
-        //heading is measured against the first sample, otherwise sitting near +/-180 wraps causing problems
-        Double referenceHeading = null;
-
-        double startTime = getRuntime();
-
-        while (opModeIsActive() && getRuntime() - startTime < SPIN_UP_SECONDS + SAMPLE_DURATION) {
-
-            pc.update();
-            pc.getChassis().setDrivePowerBypassRamp(CREEP_POWER, CREEP_POWER, 0);
-
-            double t = getRuntime() - startTime;
-
-            //the first moments are acceleration, not steady motion
-            if (t < SPIN_UP_SECONDS) continue;
-
-            Pose pose = pc.getFinalLocalizer().getPose();
-
-            if (referenceHeading == null) referenceHeading = pose.heading;
-
-            x.add(t, pose.x);
-            y.add(t, pose.y);
-            heading.add(t, MathHelper.normalizeAngleRad(pose.heading - referenceHeading));
-
-            telemetry.addData("sampling", "%.3f / %.3f sec", t - SPIN_UP_SECONDS, SAMPLE_DURATION);
-            telemetry.update();
-        }
+        double forward = Math.max(breakaway(1, 0, 0), breakaway(-1, 0, 0));
+        double strafe = Math.max(breakaway(0, 1, 0), breakaway(0, -1, 0));
+        double turn = Math.max(breakaway(0, 0, 1), breakaway(0, 0, -1));
 
         pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
-        final double positionNoise = Math.sqrt(x.variance() + y.variance());
-        final double headingNoise = Math.sqrt(heading.variance());
+        double k1Forward = Math.sqrt(translationTuner.getLastQPositionForward());
+        double k1Strafe = Math.sqrt(translationTuner.getLastQPositionStrafe());
+        double k1Heading = Math.sqrt(headingTuner.getLastQPositionHeading());
 
-        double travelled = Math.hypot(x.speed(), y.speed()) * SAMPLE_DURATION;
+        //below breakaway the LQR can't move the robot, so it can't promise better
+        double forwardStuck = forward * pc.getMecanumProfile().getMaxAcceleration(0) / k1Forward;
+        double strafeStuck = strafe * pc.getMecanumProfile().getMaxAcceleration(Math.PI / 2d) / k1Strafe;
 
-        if (travelled <= positionNoise) {
-
-            telemetry.addLine("The robot moved less than the stray being measured, so there is nothing here to measure.");
-            telemetry.update();
-
-            while (opModeIsActive()) ;
-            return;
-        }
-
-        final double positionAlreadyCloseThreshold = positionNoise * ALREADY_CLOSE_NOISE_MULTIPLIER;
-        final double headingAlreadyCloseThreshold = headingNoise * ALREADY_CLOSE_NOISE_MULTIPLIER;
+        final double positionAlreadyCloseThreshold = Math.hypot(forwardStuck, strafeStuck);
+        final double headingAlreadyCloseThreshold = turn * pc.getMotionConstraints().getAmaxH() / k1Heading;
 
         telemetry.addLine("=== FOR TranslationLQRTest ===");
         telemetry.addData("ALREADY_CLOSE_THRESHOLD_POSITION (in)", positionAlreadyCloseThreshold);
@@ -102,38 +70,69 @@ public class LQROvershootDiagnosticTest extends LinearOpMode {
         while (opModeIsActive()) ;
     }
 
-    private static class Wobble {
+    private double breakaway(double forward, double strafe, double turn) {
 
-        private double n, meanT, meanValue, m2T, m2Value, covariance;
+        pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
-        void add(double t, double value) {
+        //a time constant to stop, then one to see how much a still reading moves
+        double settle = pc.getMotionConstraints().getVmaxF() / pc.getMotionConstraints().getAmaxF();
 
-            n++;
+        double begin = getRuntime();
+        while (opModeIsActive() && getRuntime() - begin < settle) update();
 
-            //welford's algorithm for the win!
-            double dt = t - meanT;
-            meanT += dt / n;
-            m2T += dt * (t - meanT);
+        Pose last = pc.getPose().copy();
+        double still = 0;
 
-            double dValue = value - meanValue;
-            meanValue += dValue / n;
-            m2Value += dValue * (value - meanValue);
+        begin = getRuntime();
 
-            covariance += dt * (value - meanValue);
+        while (opModeIsActive() && getRuntime() - begin < settle) {
+
+            update();
+
+            still = Math.max(still, moved(last, turn != 0));
+            last = pc.getPose().copy();
         }
 
-        double speed() {
-            return m2T > 0 ? covariance / m2T : 0;
+        double power = 0;
+
+        while (opModeIsActive() && power < 1) {
+
+            update();
+
+            boolean going = moved(last, turn != 0) > 2 * still;
+            last = pc.getPose().copy();
+
+            if (going) break;
+
+            power += RAMP_PER_LOOP;
+
+            pc.getChassis().setDrivePowerBypassRamp(forward * power, strafe * power, turn * power);
+
+            telemetry.addData("pushing", "%.3f", power);
+            telemetry.update();
         }
 
-        //what is left once the steady motion is taken back out
-        double variance() {
+        pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
 
-            if (n < 3 || m2T <= 0) return 0;
+        return power;
+    }
 
-            double residual = m2Value - speed() * covariance;
+    private double moved(Pose from, boolean turning) {
 
-            return Math.max(0, residual) / (n - 2);
-        }
+        Pose pose = pc.getPose();
+
+        if (turning) return Math.abs(MathHelper.normalizeAngleRad(pose.heading - from.heading));
+
+        return Math.hypot(pose.x - from.x, pose.y - from.y);
+    }
+
+    private void update() {
+
+        pc.update();
+
+        double dt = pc.getFinalLocalizer().getDeltaTime();
+
+        translationTuner.update(0, 0, 0, 0, 0, 0, dt);
+        headingTuner.update(0, 0, 0, 0, 0, 0, dt);
     }
 }

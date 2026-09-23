@@ -132,7 +132,7 @@ public class CompletionSpeedTest extends LinearOpMode {
 
         telemetry.addData(
                 "carried", format(carried, 3) + " in of " + POSITION_TOLERANCE
-                + ", " + format(Math.toDegrees(carriedAngle), 3) + " deg of " + HEADING_TOLERANCE_DEGREES
+                        + ", " + format(Math.toDegrees(carriedAngle), 3) + " deg of " + HEADING_TOLERANCE_DEGREES
         );
         telemetry.addData("sampled up to", format(maxTestSpeed, 2) + " in/s, " + format(maxTestTurn, 2) + " rad/s");
         telemetry.addData("forward speeds", format(forwardSpeeds));
@@ -303,6 +303,9 @@ public class CompletionSpeedTest extends LinearOpMode {
     //eases off as it closes in so it doesn't blow past a low target
     private Double reachSpeed(double targetSpeed, double forwardPower, double strafePower) {
 
+        //but never below what holding the target takes, or it levels off short
+        double floor = Math.min(1, MINIMUM_APPROACH_POWER + targetSpeed / pc.getMecanumProfile().getMaxVelocity(Math.atan2(strafePower, forwardPower)));
+
         double start = getRuntime();
         double speed = 0;
 
@@ -317,7 +320,7 @@ public class CompletionSpeedTest extends LinearOpMode {
 
             if (speed >= targetSpeed) break;
 
-            double share = MathHelper.clamp(1 - speed / targetSpeed, MINIMUM_APPROACH_POWER, 1);
+            double share = MathHelper.clamp(1 - speed / targetSpeed, floor, 1);
 
             pc.getChassis().setDrivePower(forwardPower * share, strafePower * share, 0, pc.getFinalLocalizer().getDeltaTime());
         }
@@ -326,6 +329,8 @@ public class CompletionSpeedTest extends LinearOpMode {
     }
 
     private Double reachAngularSpeed(double targetSpeed) {
+
+        double floor = Math.min(1, MINIMUM_APPROACH_POWER + targetSpeed / pc.getMotionConstraints().getVmaxH());
 
         double start = getRuntime();
         double speed = 0;
@@ -340,7 +345,7 @@ public class CompletionSpeedTest extends LinearOpMode {
 
             if (speed >= targetSpeed) break;
 
-            double share = MathHelper.clamp(1 - speed / targetSpeed, MINIMUM_APPROACH_POWER, 1);
+            double share = MathHelper.clamp(1 - speed / targetSpeed, floor, 1);
 
             pc.getChassis().setDrivePower(0, 0, share, pc.getFinalLocalizer().getDeltaTime());
         }

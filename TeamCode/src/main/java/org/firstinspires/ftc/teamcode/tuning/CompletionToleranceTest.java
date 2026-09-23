@@ -81,9 +81,13 @@ public class CompletionToleranceTest extends LinearOpMode {
             return;
         }
 
+        //arrived can't be judged tighter than where the LQR stalls or where bang-bang settles
+        double positionEpsilon = Math.max(position * HEADROOM, Math.max(TranslationLQRTest.ALREADY_CLOSE_THRESHOLD_POSITION, pc.getBrakingModel().getMargin()));
+        double headingEpsilon = Math.max(heading * HEADROOM, Math.max(HeadingLQRTest.ALREADY_CLOSE_THRESHOLD_HEADING, pc.getBrakingModel().getAngularMargin()));
+
         telemetry.addLine("=== COMPLETION TOLERANCE RESULTS ===");
-        telemetry.addData("COMPLETION_POSITION_EPSILON", "%.9f", position * HEADROOM);
-        telemetry.addData("COMPLETION_HEADING_EPSILON", "Math.toRadians(%.9f)", Math.toDegrees(heading) * HEADROOM);
+        telemetry.addData("COMPLETION_POSITION_EPSILON", "%.9f", positionEpsilon);
+        telemetry.addData("COMPLETION_HEADING_EPSILON", "Math.toRadians(%.9f)", Math.toDegrees(headingEpsilon));
 
         telemetry.addLine();
 

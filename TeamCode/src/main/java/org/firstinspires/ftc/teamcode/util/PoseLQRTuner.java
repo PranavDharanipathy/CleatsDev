@@ -18,6 +18,9 @@ public class PoseLQRTuner {
     private double lastQPositionStrafe, lastQVelocityStrafe;
     private double lastQPositionHeading, lastQVelocityHeading;
 
+    private double loopSum;
+    private int loops;
+
     public PoseLQRTuner(MotionConstraints motionConstraints, int LOOP_ITERATIONS_PER_TIME_CONSTANT) {
 
         this.mecanumProfile = motionConstraints.makeMecanumProfile();
@@ -32,7 +35,12 @@ public class PoseLQRTuner {
 
     public PoseLQRController update(double forwardError, double forwardVelocity, double strafeError, double strafeVelocity, double headingError, double angularVelocity, double dt) {
 
-        double omegaCap = dt > 0 ? 1d / (LOOP_ITERATIONS_PER_TIME_CONSTANT * dt) : 0;
+        if (dt > 0) {
+            loopSum += dt;
+            loops++;
+        }
+
+        double omegaCap = loops > 0 ? 1d / (LOOP_ITERATIONS_PER_TIME_CONSTANT * loopSum / loops) : 0;
 
         double maxAccelForward = mecanumProfile.getMaxAcceleration(0);
         double maxAccelStrafe = mecanumProfile.getMaxAcceleration(Math.PI / 2d);

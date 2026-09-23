@@ -90,12 +90,13 @@ public class BrakingModel {
 
             int last = speeds.length - 1;
 
-            double previous = lameValueAt(last - 1, angle);
+            //the whole table's slope, one noisy pair would get stretched past it
+            double first = lameValueAt(0, angle);
             double end = lameValueAt(last, angle);
 
-            double from = speeds[last - 1] * speeds[last - 1], to = speeds[last] * speeds[last];
+            double from = speeds[0] * speeds[0], to = speeds[last] * speeds[last];
 
-            return end + (end - previous) * (squared - to) / (to - from);
+            return end + (end - first) * (squared - to) / (to - from);
         }
 
         //efficiency, ends up being O(log n) instead of O(n)
@@ -123,9 +124,9 @@ public class BrakingModel {
 
             int last = xs.length - 1;
 
-            double from = xs[last - 1] * xs[last - 1], to = xs[last] * xs[last];
+            double from = xs[0] * xs[0], to = xs[last] * xs[last];
 
-            return ys[last] + (ys[last] - ys[last - 1]) * (squared - to) / (to - from);
+            return ys[last] + (ys[last] - ys[0]) * (squared - to) / (to - from);
         }
 
         //efficiency, ends up being O(log n) instead of O(n)
