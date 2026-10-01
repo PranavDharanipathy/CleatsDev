@@ -39,6 +39,15 @@ public class HeadingLQRTest extends LinearOpMode {
 
         waitForStart();
 
+        String problem = new DirectionCheck(this, pc).run();
+
+        if (problem != null) {
+            telemetry.addLine(problem);
+            telemetry.update();
+            while (opModeIsActive()) ;
+            return;
+        }
+
         pc.update();
         Pose start = pc.getFinalLocalizer().getPose();
         double startHeading = start.heading;

@@ -26,6 +26,8 @@ public class TranslationLQRTest extends LinearOpMode {
     static final double ALREADY_CLOSE_THRESHOLD_POSITION = 1.9574; //inches
     private static final double MAX_RETURN_TIME = 5;
 
+    private static final String RAN_AWAY = "Stopped, the robot drove away from its start instead of back to it. The Pinpoint and the drive disagree on a direction.";
+
     private PathController pc;
 
     @Override
@@ -39,6 +41,13 @@ public class TranslationLQRTest extends LinearOpMode {
 
         waitForStart();
 
+        String problem = new DirectionCheck(this, pc).run();
+
+        if (problem != null) {
+            halt(problem);
+            return;
+        }
+
         pc.update();
         Pose start = pc.getFinalLocalizer().getPose();
 
@@ -48,6 +57,9 @@ public class TranslationLQRTest extends LinearOpMode {
 
         PoseLQRTuner tuner = new PoseLQRTuner(pc.getMotionConstraints(), LOOP_ITERATIONS_PER_TIME_CONSTANT);
         MecanumProfile profile = pc.getMecanumProfile();
+
+        //farther than this test ever drives, only a direction mix-up gets here
+        double runawayDistance = TEST_DISTANCE + pc.getBrakingModel().getStoppingDistance(0, pc.getMotionConstraints().getVmaxF());
 
         boolean stopRequested = false;
 
@@ -68,6 +80,14 @@ public class TranslationLQRTest extends LinearOpMode {
                 if (gamepad1.a) stopRequested = true;
 
                 pc.update();
+
+                Pose now = pc.getFinalLocalizer().getPose();
+
+                if (Math.hypot(now.x - start.x, now.y - start.y) > runawayDistance) {
+                    halt(RAN_AWAY);
+                    return;
+                }
+
                 telemetry.addLine("Moving away with transit mode");
                 telemetry.update();
             }
@@ -100,6 +120,11 @@ public class TranslationLQRTest extends LinearOpMode {
 
                 double distance = Math.hypot(fieldErrorX, fieldErrorY);
                 double speed = Math.hypot(velocity.x, velocity.y);
+
+                if (distance > runawayDistance) {
+                    halt(RAN_AWAY);
+                    return;
+                }
 
                 if (initialForwardError == null) {
                     initialForwardError = forwardError;
@@ -153,6 +178,17 @@ public class TranslationLQRTest extends LinearOpMode {
         telemetry.addData("qVelocityForward", tuner.getLastQVelocityForward());
         telemetry.addData("qPositionStrafe", tuner.getLastQPositionStrafe());
         telemetry.addData("qVelocityStrafe", tuner.getLastQVelocityStrafe());
+        telemetry.update();
+
+        while (opModeIsActive()) ;
+    }
+
+    private void halt(String problem) {
+
+        pc.cancel();
+        pc.getChassis().setDrivePowerBypassRamp(0, 0, 0);
+
+        telemetry.addLine(problem);
         telemetry.update();
 
         while (opModeIsActive()) ;
